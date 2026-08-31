@@ -80,6 +80,18 @@ fn sync_ui(window: &AppWindow, fsm: &CalculatorFsm) {
         None => "",
     };
     window.set_active_op(SharedString::from(op_str));
+
+    // Synchronize paper tape history entries
+    let tape_entries: Vec<TapeItem> = fsm
+        .history()
+        .iter()
+        .map(|entry| TapeItem {
+            id: entry.id as i32,
+            expression: SharedString::from(&entry.expression),
+            result: SharedString::from(&entry.result),
+        })
+        .collect();
+    window.set_tape_entries(ModelRc::from(Rc::new(VecModel::from(tape_entries))));
 }
 
 /// Translates a UI key action string to a typed `Key` enum.
@@ -134,8 +146,30 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    let window_clear = window.as_weak();
+    let fsm_clear = fsm.clone();
+    window.on_clear_tape(move || {
+        fsm_clear.borrow_mut().clear_history();
+        if let Some(win) = window_clear.upgrade() {
+            sync_ui(&win, &fsm_clear.borrow());
+        }
+    });
+
+    let window_tape = window.as_weak();
+    window.on_toggle_tape(move || {
+        if let Some(win) = window_tape.upgrade() {
+            let new_state = !win.get_show_tape();
+            win.set_show_tape(new_state);
+            let target_w = if new_state { 570.0 } else { 330.0 };
+            win.window()
+                .set_size(slint::LogicalSize::new(target_w, 490.0));
+            win.window().request_redraw();
+        }
+    });
+
     window.run()
 }
+
 
 #[cfg(test)]
 mod tests {
