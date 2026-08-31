@@ -1,6 +1,7 @@
 //! Finite State Machine controller for the Heptaseg calculator.
 
 use crate::core::engine::Engine;
+use crate::core::history::{HistoryEntry, HistoryLog};
 use crate::core::register::Register;
 use crate::core::state::CalculatorState;
 use crate::core::types::{BinaryOp, Key, MemoryOp, StatusFlags, UnaryOp};
@@ -11,6 +12,7 @@ pub struct CalculatorFsm {
     state: CalculatorState,
     engine: Engine,
     has_error: bool,
+    history: HistoryLog,
 }
 
 impl Default for CalculatorFsm {
@@ -26,8 +28,10 @@ impl CalculatorFsm {
             state: CalculatorState::Ready,
             engine: Engine::new(),
             has_error: false,
+            history: HistoryLog::default(),
         }
     }
+
 
     /// Processes an input key event and transitions the state machine accordingly.
     pub fn process_key(&mut self, key: Key) {
@@ -123,11 +127,22 @@ impl CalculatorFsm {
         &self.state
     }
 
-    /// Resets the calculator to the initial `Ready` state (retaining memory).
+    /// Returns a slice of calculation history log entries (Paper Tape).
+    pub fn history(&self) -> &[HistoryEntry] {
+        self.history.entries()
+    }
+
+    /// Clears the calculation history log.
+    pub fn clear_history(&mut self) {
+        self.history.clear();
+    }
+
+    /// Resets the calculator to the initial `Ready` state (retaining memory and history).
     pub fn reset(&mut self) {
         self.state = CalculatorState::Ready;
         self.has_error = false;
     }
+
 
     fn enter_error(&mut self) {
         self.has_error = true;
@@ -226,7 +241,16 @@ impl CalculatorFsm {
                 let b = register.to_f64();
                 match self.engine.execute_binary(*prev_op, *accumulator, b) {
                     Ok(result) => match Register::from_f64(result) {
-                        Ok(_) => {
+                        Ok(res_reg) => {
+                            self.history.record(
+                                format!(
+                                    "{} {} {} =",
+                                    format_val(*accumulator),
+                                    prev_op,
+                                    format_val(b)
+                                ),
+                                res_reg.display_string().to_string(),
+                            );
                             self.state = CalculatorState::OperatorPending {
                                 accumulator: result,
                                 operator: op,
@@ -237,6 +261,7 @@ impl CalculatorFsm {
                     Err(_) => self.enter_error(),
                 }
             }
+
             CalculatorState::ResultDisplayed { register, .. } => {
                 self.state = CalculatorState::OperatorPending {
                     accumulator: register.to_f64(),
@@ -262,6 +287,15 @@ impl CalculatorFsm {
                     match self.engine.execute_unary(op, val, None) {
                         Ok(res) => match Register::from_f64(res) {
                             Ok(new_reg) => {
+                                let expr = match op {
+                                    UnaryOp::SquareRoot => format!("{} √ =", format_val(val)),
+                                    UnaryOp::Percentage => format!("{} % =", format_val(val)),
+                                    UnaryOp::Negate => String::new(),
+                                };
+                                if !expr.is_empty() {
+                                    self.history
+                                        .record(expr, new_reg.display_string().to_string());
+                                }
                                 self.state = CalculatorState::ResultDisplayed {
                                     register: new_reg,
                                     last_operation: None,
@@ -302,6 +336,19 @@ impl CalculatorFsm {
                     match self.engine.execute_unary(op, val, base) {
                         Ok(res) => match Register::from_f64(res) {
                             Ok(mut new_reg) => {
+                                let expr = match op {
+                                    UnaryOp::SquareRoot => format!("{} √ =", format_val(val)),
+                                    UnaryOp::Percentage => format!(
+                                        "{} % (of {}) =",
+                                        format_val(val),
+                                        format_val(*accumulator)
+                                    ),
+                                    UnaryOp::Negate => String::new(),
+                                };
+                                if !expr.is_empty() {
+                                    self.history
+                                        .record(expr, new_reg.display_string().to_string());
+                                }
                                 new_reg.set_editing(true);
                                 self.state = CalculatorState::EnteringOperand2 {
                                     accumulator: *accumulator,
@@ -323,6 +370,15 @@ impl CalculatorFsm {
                     match self.engine.execute_unary(op, val, None) {
                         Ok(res) => match Register::from_f64(res) {
                             Ok(new_reg) => {
+                                let expr = match op {
+                                    UnaryOp::SquareRoot => format!("{} √ =", format_val(val)),
+                                    UnaryOp::Percentage => format!("{} % =", format_val(val)),
+                                    UnaryOp::Negate => String::new(),
+                                };
+                                if !expr.is_empty() {
+                                    self.history
+                                        .record(expr, new_reg.display_string().to_string());
+                                }
                                 self.state = CalculatorState::ResultDisplayed {
                                     register: new_reg,
                                     last_operation: None,
@@ -423,6 +479,15 @@ impl CalculatorFsm {
                 match self.engine.execute_binary(op, *accumulator, b) {
                     Ok(result) => match Register::from_f64(result) {
                         Ok(reg) => {
+                            self.history.record(
+                                format!(
+                                    "{} {} {} =",
+                                    format_val(*accumulator),
+                                    op,
+                                    format_val(b)
+                                ),
+                                reg.display_string().to_string(),
+                            );
                             self.state = CalculatorState::ResultDisplayed {
                                 register: reg,
                                 last_operation: Some((op, b)),
@@ -444,6 +509,10 @@ impl CalculatorFsm {
                 match self.engine.execute_binary(op, a, b) {
                     Ok(result) => match Register::from_f64(result) {
                         Ok(reg) => {
+                            self.history.record(
+                                format!("{} {} {} =", format_val(a), op, format_val(b)),
+                                reg.display_string().to_string(),
+                            );
                             self.state = CalculatorState::ResultDisplayed {
                                 register: reg,
                                 last_operation: Some((op, b)),
@@ -464,6 +533,10 @@ impl CalculatorFsm {
                     match self.engine.execute_binary(op, a, b) {
                         Ok(result) => match Register::from_f64(result) {
                             Ok(reg) => {
+                                self.history.record(
+                                    format!("{} {} {} =", format_val(a), op, format_val(b)),
+                                    reg.display_string().to_string(),
+                                );
                                 self.state = CalculatorState::ResultDisplayed {
                                     register: reg,
                                     last_operation: Some((op, b)),
@@ -478,6 +551,7 @@ impl CalculatorFsm {
             CalculatorState::Error => {}
         }
     }
+
 
     fn handle_clear_entry(&mut self) {
         match &mut self.state {
@@ -569,4 +643,30 @@ mod tests {
         fsm.process_key(Key::Equals);
         assert_eq!(fsm.display_string(), "14");
     }
+
+    #[test]
+    fn test_history_recording() {
+        let mut fsm = CalculatorFsm::new();
+        fsm.process_key(Key::Digit(1));
+        fsm.process_key(Key::Digit(2));
+        fsm.process_key(Key::BinaryOp(BinaryOp::Add));
+        fsm.process_key(Key::Digit(8));
+        fsm.process_key(Key::Equals);
+
+        assert_eq!(fsm.history().len(), 1);
+        assert_eq!(fsm.history()[0].expression, "12 + 8 =");
+        assert_eq!(fsm.history()[0].result, "20");
+
+        fsm.clear_history();
+        assert!(fsm.history().is_empty());
+    }
 }
+
+fn format_val(v: f64) -> String {
+    if let Ok(reg) = Register::from_f64(v) {
+        reg.display_string().to_string()
+    } else {
+        format!("{v}")
+    }
+}
+
