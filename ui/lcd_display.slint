@@ -9,10 +9,11 @@ export component LcdDisplay inherits Rectangle {
     in property <bool> is-rpn: false;
     in property <string> active-op: "";
 
-    in property <color> lcd-bg: #a3b88c;
-    in property <color> active-ink: #0a1208;
-    in property <color> ghost-ink: #94a97e;
-    in property <color> panel-border: #4e593f;
+    in property <color> lcd-bg: #859870;
+    in property <color> active-ink: #050a04;
+    in property <color> ghost-ink: #748760;
+    in property <color> panel-border: #3a4430;
+
 
 
     width: 290px;
@@ -131,11 +132,6 @@ export component LcdDisplay inherits Rectangle {
             for d[i] in root.digits: Rectangle {
                 width: 30px;
                 height: 46px;
-                border-width: 0.5px;
-                border-color: root.panel-border;
-                opacity: 0.3;
-
-
 
                 LcdDigit {
                     x: (parent.width - self.width) / 2;
@@ -146,6 +142,7 @@ export component LcdDisplay inherits Rectangle {
                     ghost-color: root.ghost-ink;
                 }
             }
+
         }
     }
 }
