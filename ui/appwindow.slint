@@ -5,15 +5,9 @@ import { PaperTape, TapeItem } from "paper_tape.slint";
 export component AppWindow inherits Window {
     title: "Heptaseg";
     icon: @image-url("");
-<<<<<<< HEAD
-    width: root.show-tape ? 570px : 330px;
-    height: 490px;
-    background: #23262b;
-=======
     min-width: 330px;
     min-height: 490px;
     background: #1e2025;
->>>>>>> 6ab605a (fixup! feat(ui): add expandable retro paper tape drawer with transaction feed)
     default-font-family: "sans-serif";
 
     in property <[string]> digits: [" ", " ", " ", " ", " ", " ", " ", "0"];
@@ -24,6 +18,52 @@ export component AppWindow inherits Window {
     in property <string> active-op: "";
 
     in-out property <bool> show-tape: false;
+    in property <[TapeItem]> tape-entries: [];
+    in-out property <int> theme-index: 0;
+
+    // Theme color resolver functions (0: Classic Olive, 1: Quartz Silver, 2: VFD Cyan, 3: Sinclair Ruby LED)
+    pure function lcd_bg() -> color {
+        root.theme-index == 1 ? #9ea7a6 :
+        root.theme-index == 2 ? #061113 :
+        root.theme-index == 3 ? #140305 : #899975
+    }
+
+    pure function active_ink() -> color {
+        root.theme-index == 1 ? #0c1012 :
+        root.theme-index == 2 ? #00f5d4 :
+        root.theme-index == 3 ? #ff1a2a : #141c11
+    }
+
+    pure function ghost_ink() -> color {
+        root.theme-index == 1 ? #8a9392 :
+        root.theme-index == 2 ? #042926 :
+        root.theme-index == 3 ? #3d070b : #788866
+    }
+
+    pure function cell_divider() -> color {
+        root.theme-index == 1 ? #929c9b :
+        root.theme-index == 2 ? #081d20 :
+        root.theme-index == 3 ? #200709 : #82926e
+    }
+
+    pure function bezel_bg() -> color {
+        root.theme-index == 1 ? #1a1c20 :
+        root.theme-index == 2 ? #0b0f14 :
+        root.theme-index == 3 ? #12090b : #1e221b
+    }
+
+    pure function bezel_border() -> color {
+        root.theme-index == 1 ? #101216 :
+        root.theme-index == 2 ? #04070a :
+        root.theme-index == 3 ? #0a0406 : #121511
+    }
+
+    pure function casing_bg() -> color {
+        root.theme-index == 1 ? #252830 :
+        root.theme-index == 2 ? #161c24 :
+        root.theme-index == 3 ? #1a1416 : #2b2e35
+    }
+
     callback key-action(string);
     callback clear-tape();
     callback toggle-tape();
@@ -65,7 +105,7 @@ export component AppWindow inherits Window {
             Rectangle {
                 width: 314px;
                 height: 100%;
-                background: #2b2e35;
+                background: root.casing_bg();
                 border-radius: 10px;
                 border-width: 1.5px;
                 border-color: #3e434d;
@@ -75,7 +115,7 @@ export component AppWindow inherits Window {
                     spacing: 12px;
                     alignment: start;
 
-                    // Header section: Brand badge, Tape toggle & Solar Cell
+                    // Header section: Brand badge, Theme toggle, Tape toggle & Solar Cell
                     HorizontalLayout {
                         height: 38px;
                         alignment: space-between;
@@ -101,12 +141,35 @@ export component AppWindow inherits Window {
                         }
 
                         HorizontalLayout {
-                            spacing: 6px;
+                            spacing: 5px;
                             alignment: center;
+
+                            // Theme Selector Button
+                            Rectangle {
+                                width: 28px;
+                                height: 26px;
+                                background: ta-theme.pressed ? #4f46e5 : ta-theme.has-hover ? #475569 : #334155;
+                                border-radius: 4px;
+                                border-width: 1px;
+                                border-color: #475569;
+
+                                Text {
+                                    text: "🎨";
+                                    font-size: 12px;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                ta-theme := TouchArea {
+                                    clicked => {
+                                        root.theme-index = Math.mod(root.theme-index + 1, 4);
+                                    }
+                                }
+                            }
 
                             // Paper Tape Toggle Button
                             Rectangle {
-                                width: 34px;
+                                width: 28px;
                                 height: 26px;
                                 background: root.show-tape ? #d97706 : (ta-tape.has-hover ? #475569 : #334155);
                                 border-radius: 4px;
@@ -129,7 +192,7 @@ export component AppWindow inherits Window {
 
                             // Vintage Photovoltaic Solar Panel
                             Rectangle {
-                                width: 76px;
+                                width: 68px;
                                 height: 28px;
                                 background: #141722;
                                 border-radius: 3px;
@@ -141,7 +204,7 @@ export component AppWindow inherits Window {
                                     padding: 2px;
                                     spacing: 0px;
                                     for i in 4: Rectangle {
-                                        width: 17.5px;
+                                        width: 15.5px;
                                         height: 100%;
                                         border-width: 0.5px;
                                         border-color: #2b3244;
@@ -162,7 +225,7 @@ export component AppWindow inherits Window {
                         }
                     }
 
-                    // LCD Screen Unit
+                    // LCD Screen Unit with dynamic theme bindings
                     LcdDisplay {
                         digits: root.digits;
                         decimals: root.decimals;
@@ -170,6 +233,12 @@ export component AppWindow inherits Window {
                         is-negative: root.is-negative;
                         has-error: root.has-error;
                         active-op: root.active-op;
+                        lcd-bg: root.lcd_bg();
+                        active-ink: root.active_ink();
+                        ghost-ink: root.ghost_ink();
+                        cell-divider: root.cell_divider();
+                        bezel-bg: root.bezel_bg();
+                        bezel-border: root.bezel_border();
                     }
 
                     // Spacer
