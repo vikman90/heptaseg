@@ -1,5 +1,146 @@
+import { LcdDisplay } from "lcd_display.slint";
+import { Keypad } from "keypad.slint";
+
 export component AppWindow inherits Window {
     title: "Heptaseg";
-    width: 320px;
-    height: 480px;
+    icon: @image-url("");
+    width: 330px;
+    height: 490px;
+    background: #23262b;
+    default-font-family: "sans-serif";
+
+    in property <[string]> digits: [" ", " ", " ", " ", " ", " ", " ", "0"];
+    in property <[bool]> decimals: [false, false, false, false, false, false, false, false];
+    in property <bool> memory-active: false;
+    in property <bool> is-negative: false;
+    in property <bool> has-error: false;
+    in property <string> active-op: "";
+
+    callback key-action(string);
+
+    forward-focus: focus-scope;
+
+    focus-scope := FocusScope {
+        key-pressed(event) => {
+            if (event.text == "0") { root.key-action("0"); accept; }
+            else if (event.text == "1") { root.key-action("1"); accept; }
+            else if (event.text == "2") { root.key-action("2"); accept; }
+            else if (event.text == "3") { root.key-action("3"); accept; }
+            else if (event.text == "4") { root.key-action("4"); accept; }
+            else if (event.text == "5") { root.key-action("5"); accept; }
+            else if (event.text == "6") { root.key-action("6"); accept; }
+            else if (event.text == "7") { root.key-action("7"); accept; }
+            else if (event.text == "8") { root.key-action("8"); accept; }
+            else if (event.text == "9") { root.key-action("9"); accept; }
+            else if (event.text == "." || event.text == ",") { root.key-action("."); accept; }
+            else if (event.text == "+") { root.key-action("+"); accept; }
+            else if (event.text == "-") { root.key-action("-"); accept; }
+            else if (event.text == "*") { root.key-action("*"); accept; }
+            else if (event.text == "/") { root.key-action("/"); accept; }
+            else if (event.text == "%") { root.key-action("%"); accept; }
+            else if (event.text == "=" || event.text == "\n") { root.key-action("="); accept; }
+            else if (event.text == "c" || event.text == "C" || event.text == Key.Escape) { root.key-action("AC"); accept; }
+            else if (event.text == Key.Backspace || event.text == Key.Delete) { root.key-action("CE"); accept; }
+            else { reject; }
+        }
+
+        // Pocket Calculator Outer Casing
+        Rectangle {
+            x: 8px;
+            y: 8px;
+            width: parent.width - 16px;
+            height: parent.height - 16px;
+            background: #2b2e35;
+            border-radius: 10px;
+            border-width: 1.5px;
+            border-color: #3e434d;
+
+            VerticalLayout {
+                padding: 12px;
+                spacing: 12px;
+                alignment: start;
+
+                // Header section: Brand badge & Solar Cell
+                HorizontalLayout {
+                    height: 38px;
+                    alignment: space-between;
+
+                    // Brand Badge
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 1px;
+                        Text {
+                            text: "HEPTASEG";
+                            font-size: 15px;
+                            font-weight: 900;
+                            letter-spacing: 2px;
+                            color: #d1d8e0;
+                        }
+                        Text {
+                            text: "ELECTRONIC CALCULATOR";
+                            font-size: 8px;
+                            font-weight: 600;
+                            letter-spacing: 1px;
+                            color: #7b8896;
+                        }
+                    }
+
+                    // Vintage Photovoltaic Solar Panel
+                    Rectangle {
+                        width: 90px;
+                        height: 30px;
+                        background: #141722;
+                        border-radius: 3px;
+                        border-width: 1px;
+                        border-color: #363c4e;
+
+                        // Solar cell grid lines
+                        HorizontalLayout {
+                            padding: 2px;
+                            spacing: 0px;
+                            for i in 4: Rectangle {
+                                width: 21px;
+                                height: 100%;
+                                border-width: 0.5px;
+                                border-color: #2b3244;
+                                background: #181c2b;
+                            }
+                        }
+
+                        // Glass gleam
+                        Rectangle {
+                            x: 0;
+                            y: 0;
+                            width: 100%;
+                            height: 50%;
+                            background: #ffffff;
+                            opacity: 0.04;
+                        }
+                    }
+                }
+
+                // LCD Screen Unit
+                LcdDisplay {
+                    digits: root.digits;
+                    decimals: root.decimals;
+                    memory-active: root.memory-active;
+                    is-negative: root.is-negative;
+                    has-error: root.has-error;
+                    active-op: root.active-op;
+                }
+
+                // Spacer
+                Rectangle {
+                    height: 2px;
+                }
+
+                // Keypad Unit
+                Keypad {
+                    key-pressed(key) => {
+                        root.key-action(key);
+                    }
+                }
+            }
+        }
+    }
 }

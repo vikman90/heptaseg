@@ -1,0 +1,128 @@
+// 7-segment LCD digit cell with authentic active and ghost segments (Orthogonal/Pixel-perfect).
+
+export component LcdDigit inherits Rectangle {
+    in property <string> digit-char: " ";
+    in property <bool> has-decimal: false;
+    in property <color> active-color: #141c11;
+    in property <color> ghost-color: #788866;
+
+    width: 24px;
+    height: 40px;
+
+    // Segment activation logic
+    pure function seg_a(ch: string) -> bool {
+        ch == "0" || ch == "2" || ch == "3" || ch == "5" || ch == "6" || ch == "7" || ch == "8" || ch == "9" || ch == "E"
+    }
+    pure function seg_b(ch: string) -> bool {
+        ch == "0" || ch == "1" || ch == "2" || ch == "3" || ch == "4" || ch == "7" || ch == "8" || ch == "9"
+    }
+    pure function seg_c(ch: string) -> bool {
+        ch == "0" || ch == "1" || ch == "3" || ch == "4" || ch == "5" || ch == "6" || ch == "7" || ch == "8" || ch == "9" || ch == "o"
+    }
+    pure function seg_d(ch: string) -> bool {
+        ch == "0" || ch == "2" || ch == "3" || ch == "5" || ch == "6" || ch == "8" || ch == "9" || ch == "E" || ch == "o"
+    }
+    pure function seg_e(ch: string) -> bool {
+        ch == "0" || ch == "2" || ch == "6" || ch == "8" || ch == "E" || ch == "r" || ch == "o"
+    }
+    pure function seg_f(ch: string) -> bool {
+        ch == "0" || ch == "4" || ch == "5" || ch == "6" || ch == "8" || ch == "9" || ch == "E"
+    }
+    pure function seg_g(ch: string) -> bool {
+        ch == "2" || ch == "3" || ch == "4" || ch == "5" || ch == "6" || ch == "8" || ch == "9" || ch == "-" || ch == "E" || ch == "r" || ch == "o"
+    }
+
+    // Segment A (Top: (4.5, 3.0) to (19.5, 3.0), Thickness 3.2, Gap 0.5)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_a(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 5.0 3.0 L 19.0 3.0 L 15.8 6.2 L 8.2 6.2 Z";
+    }
+
+    // Segment B (Top-Right: x from 16.3 to 19.5, y from 3.5 to 19.5)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_b(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 19.5 3.5 L 19.5 19.5 L 16.3 17.9 L 16.3 6.7 Z";
+    }
+
+    // Segment C (Bottom-Right: x from 16.3 to 19.5, y from 20.5 to 36.5)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_c(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 19.5 20.5 L 19.5 36.5 L 16.3 33.3 L 16.3 22.1 Z";
+    }
+
+    // Segment D (Bottom: (4.5, 37.0) to (19.5, 37.0), Thickness 3.2, Gap 0.5)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_d(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 5.0 37.0 L 19.0 37.0 L 15.8 33.8 L 8.2 33.8 Z";
+    }
+
+    // Segment E (Bottom-Left: x from 4.5 to 7.7, y from 20.5 to 36.5)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_e(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 4.5 20.5 L 7.7 22.1 L 7.7 33.3 L 4.5 36.5 Z";
+    }
+
+    // Segment F (Top-Left: x from 4.5 to 7.7, y from 3.5 to 19.5)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_f(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 4.5 3.5 L 7.7 6.7 L 7.7 17.9 L 4.5 19.5 Z";
+    }
+
+    // Segment G (Middle: Hexagon centered at y=20.0)
+    Path {
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: 24;
+        viewbox-height: 40;
+        width: 100%;
+        height: 100%;
+        fill: seg_g(root.digit-char) ? root.active-color : root.ghost-color;
+        commands: "M 5.0 20.0 L 6.6 18.4 L 17.4 18.4 L 19.0 20.0 L 17.4 21.6 L 6.6 21.6 Z";
+    }
+
+    // Decimal Point (DP)
+    Rectangle {
+        x: 20.2px;
+        y: 34.0px;
+        width: 3.2px;
+        height: 3.2px;
+        border-radius: 0.5px;
+        background: root.has-decimal ? root.active-color : root.ghost-color;
+    }
+}

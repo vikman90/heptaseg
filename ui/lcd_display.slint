@@ -1,0 +1,135 @@
+import { LcdDigit } from "lcd_digit.slint";
+
+export component LcdDisplay inherits Rectangle {
+    in property <[string]> digits: [" ", " ", " ", " ", " ", " ", " ", "0"];
+    in property <[bool]> decimals: [false, false, false, false, false, false, false, false];
+    in property <bool> memory-active: false;
+    in property <bool> is-negative: false;
+    in property <bool> has-error: false;
+    in property <string> active-op: "";
+
+    property <color> lcd-bg: #899975;
+    property <color> active-ink: #141c11;
+    property <color> ghost-ink: #788866;
+    property <color> cell-divider: #82926e;
+
+    width: 290px;
+    height: 95px;
+    background: #1e221b;
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: #121511;
+
+    // Inner LCD glass panel
+    Rectangle {
+        x: 6px;
+        y: 6px;
+        width: parent.width - 12px;
+        height: parent.height - 12px;
+        background: root.lcd-bg;
+        border-radius: 3px;
+        border-width: 1px;
+        border-color: #6d7b5c;
+
+        // Subtle LCD inner shadow / bevel
+        Rectangle {
+            width: 100%;
+            height: 100%;
+            border-width: 1px;
+            border-color: #5d6a4e;
+            opacity: 0.4;
+        }
+
+        // Annunciator row (Flags: M, -, E, OP)
+        HorizontalLayout {
+            x: 10px;
+            y: 6px;
+            width: parent.width - 20px;
+            height: 14px;
+            spacing: 12px;
+
+            // Memory flag [M]
+            Text {
+                text: "M";
+                font-size: 11px;
+                font-weight: 700;
+                color: root.memory-active ? root.active-ink : root.ghost-ink;
+            }
+
+            // Negative sign [-]
+            Text {
+                text: "−";
+                font-size: 13px;
+                font-weight: 900;
+                color: root.is-negative ? root.active-ink : root.ghost-ink;
+            }
+
+            // Error flag [E]
+            Text {
+                text: "E";
+                font-size: 11px;
+                font-weight: 700;
+                color: root.has-error ? root.active-ink : root.ghost-ink;
+            }
+
+            // Flexible spacer
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            // Active operator indicators
+            HorizontalLayout {
+                spacing: 8px;
+                Text {
+                    text: "+";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: root.active-op == "+" ? root.active-ink : root.ghost-ink;
+                }
+                Text {
+                    text: "−";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: root.active-op == "-" ? root.active-ink : root.ghost-ink;
+                }
+                Text {
+                    text: "×";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: root.active-op == "×" ? root.active-ink : root.ghost-ink;
+                }
+                Text {
+                    text: "÷";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: root.active-op == "÷" ? root.active-ink : root.ghost-ink;
+                }
+            }
+        }
+
+        // 8 Digit Cells row
+        HorizontalLayout {
+            x: 8px;
+            y: 28px;
+            width: parent.width - 16px;
+            height: 48px;
+            alignment: space-between;
+
+            for d[i] in root.digits: Rectangle {
+                width: 30px;
+                height: 46px;
+                border-width: 0.5px;
+                border-color: root.cell-divider;
+
+                LcdDigit {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    digit-char: d;
+                    has-decimal: root.decimals[i];
+                    active-color: root.active-ink;
+                    ghost-color: root.ghost-ink;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,164 @@
+export component CalcButton inherits Rectangle {
+    in property <string> label: "";
+    in property <string> btn-type: "digit"; // "digit", "op", "ctrl", "mem", "equals"
+    in property <length> key-width: 52px;
+    in property <length> key-height: 42px;
+
+    callback clicked();
+
+    width: root.key-width;
+    height: root.key-height;
+
+    property <color> bg-base:
+        root.btn-type == "ctrl" ? #c84b25 :
+        root.btn-type == "ctrl-ce" ? #4e443f :
+        root.btn-type == "mem" ? #2a3441 :
+        root.btn-type == "op" ? #3a424e :
+        root.btn-type == "equals" ? #d47a24 :
+        #3b3e44;
+
+    property <color> border-top-color:
+        root.btn-type == "ctrl" ? #de653f :
+        root.btn-type == "ctrl-ce" ? #635852 :
+        root.btn-type == "mem" ? #3d4a5b :
+        root.btn-type == "op" ? #4e5765 :
+        root.btn-type == "equals" ? #e8913e :
+        #52565e;
+
+    property <color> border-bottom-color:
+        root.btn-type == "ctrl" ? #8e3215 :
+        root.btn-type == "ctrl-ce" ? #2d2623 :
+        root.btn-type == "mem" ? #181e26 :
+        root.btn-type == "op" ? #21262d :
+        root.btn-type == "equals" ? #8f4c0c :
+        #212327;
+
+    property <color> text-color:
+        root.btn-type == "mem" ? #80b3ff :
+        root.btn-type == "ctrl" ? #ffffff :
+        root.btn-type == "ctrl-ce" ? #f0a85d :
+        root.btn-type == "equals" ? #ffffff :
+        root.btn-type == "op" ? #e2e8f0 :
+        #f5f7fa;
+
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    // Outer drop-shadow / bevel
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+        background: #141619;
+    }
+
+    // Keycap body
+    Rectangle {
+        y: touch.pressed ? 2px : 0px;
+        width: 100%;
+        height: parent.height - 2px;
+        background: touch.pressed ? root.bg-base.darker(0.15) : (touch.has-hover ? root.bg-base.brighter(0.12) : root.bg-base);
+        border-radius: 4px;
+        border-width: 1px;
+        border-color: root.border-top-color;
+
+        // Top highlight
+        Rectangle {
+            x: 2px;
+            y: 1px;
+            width: parent.width - 4px;
+            height: 2px;
+            background: root.border-top-color;
+            opacity: 0.6;
+        }
+
+        // Bottom shadow line
+        Rectangle {
+            x: 2px;
+            y: parent.height - 2px;
+            width: parent.width - 4px;
+            height: 1px;
+            background: root.border-bottom-color;
+            opacity: 0.8;
+        }
+
+        Text {
+            text: root.label;
+            font-size: root.btn-type == "mem" ? 13px : (root.btn-type == "ctrl" || root.btn-type == "ctrl-ce" ? 14px : 16px);
+            font-weight: 700;
+            color: root.text-color;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+}
+
+export component Keypad inherits Rectangle {
+    callback key-pressed(string);
+
+    width: 290px;
+    height: 245px;
+
+    VerticalLayout {
+        spacing: 8px;
+        alignment: space-between;
+
+        // Row 1: Memory & AC
+        HorizontalLayout {
+            spacing: 7px;
+            alignment: space-between;
+            CalcButton { label: "MC"; btn-type: "mem"; clicked => { root.key-pressed("MC"); } }
+            CalcButton { label: "MR"; btn-type: "mem"; clicked => { root.key-pressed("MR"); } }
+            CalcButton { label: "M−"; btn-type: "mem"; clicked => { root.key-pressed("M-"); } }
+            CalcButton { label: "M+"; btn-type: "mem"; clicked => { root.key-pressed("M+"); } }
+            CalcButton { label: "AC"; btn-type: "ctrl"; clicked => { root.key-pressed("AC"); } }
+        }
+
+        // Row 2: 7, 8, 9, %, CE
+        HorizontalLayout {
+            spacing: 7px;
+            alignment: space-between;
+            CalcButton { label: "7"; btn-type: "digit"; clicked => { root.key-pressed("7"); } }
+            CalcButton { label: "8"; btn-type: "digit"; clicked => { root.key-pressed("8"); } }
+            CalcButton { label: "9"; btn-type: "digit"; clicked => { root.key-pressed("9"); } }
+            CalcButton { label: "%"; btn-type: "op"; clicked => { root.key-pressed("%"); } }
+            CalcButton { label: "CE"; btn-type: "ctrl-ce"; clicked => { root.key-pressed("CE"); } }
+        }
+
+        // Row 3: 4, 5, 6, ×, ÷
+        HorizontalLayout {
+            spacing: 7px;
+            alignment: space-between;
+            CalcButton { label: "4"; btn-type: "digit"; clicked => { root.key-pressed("4"); } }
+            CalcButton { label: "5"; btn-type: "digit"; clicked => { root.key-pressed("5"); } }
+            CalcButton { label: "6"; btn-type: "digit"; clicked => { root.key-pressed("6"); } }
+            CalcButton { label: "×"; btn-type: "op"; clicked => { root.key-pressed("*"); } }
+            CalcButton { label: "÷"; btn-type: "op"; clicked => { root.key-pressed("/"); } }
+        }
+
+        // Row 4: 1, 2, 3, +, −
+        HorizontalLayout {
+            spacing: 7px;
+            alignment: space-between;
+            CalcButton { label: "1"; btn-type: "digit"; clicked => { root.key-pressed("1"); } }
+            CalcButton { label: "2"; btn-type: "digit"; clicked => { root.key-pressed("2"); } }
+            CalcButton { label: "3"; btn-type: "digit"; clicked => { root.key-pressed("3"); } }
+            CalcButton { label: "+"; btn-type: "op"; clicked => { root.key-pressed("+"); } }
+            CalcButton { label: "−"; btn-type: "op"; clicked => { root.key-pressed("-"); } }
+        }
+
+        // Row 5: 0, ., +/-, √, =
+        HorizontalLayout {
+            spacing: 7px;
+            alignment: space-between;
+            CalcButton { label: "0"; btn-type: "digit"; clicked => { root.key-pressed("0"); } }
+            CalcButton { label: "•"; btn-type: "digit"; clicked => { root.key-pressed("."); } }
+            CalcButton { label: "±"; btn-type: "op"; clicked => { root.key-pressed("+/-"); } }
+            CalcButton { label: "√"; btn-type: "op"; clicked => { root.key-pressed("sqrt"); } }
+            CalcButton { label: "="; btn-type: "equals"; clicked => { root.key-pressed("="); } }
+        }
+    }
+}
