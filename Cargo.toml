@@ -1,0 +1,16 @@
+[package]
+name = "heptaseg"
+version = "0.1.0"
+edition = "2021"
+authors = ["Heptaseg Contributors"]
+description = "A vintage 7-segment LCD pocket calculator built with Rust and Slint"
+license = "MIT"
+readme = "README.md"
+keywords = ["calculator", "slint", "retro", "lcd", "fsm"]
+categories = ["gui"]
+
+[dependencies]
+slint = "1.17"
+
+[build-dependencies]
+slint-build = "1.17"
