@@ -32,7 +32,6 @@ impl CalculatorFsm {
         }
     }
 
-
     /// Processes an input key event and transitions the state machine accordingly.
     pub fn process_key(&mut self, key: Key) {
         // If in error state, only Clear (AC) can unlock the calculator
@@ -142,7 +141,6 @@ impl CalculatorFsm {
         self.state = CalculatorState::Ready;
         self.has_error = false;
     }
-
 
     fn enter_error(&mut self) {
         self.has_error = true;
@@ -480,12 +478,7 @@ impl CalculatorFsm {
                     Ok(result) => match Register::from_f64(result) {
                         Ok(reg) => {
                             self.history.record(
-                                format!(
-                                    "{} {} {} =",
-                                    format_val(*accumulator),
-                                    op,
-                                    format_val(b)
-                                ),
+                                format!("{} {} {} =", format_val(*accumulator), op, format_val(b)),
                                 reg.display_string().to_string(),
                             );
                             self.state = CalculatorState::ResultDisplayed {
@@ -552,7 +545,6 @@ impl CalculatorFsm {
         }
     }
 
-
     fn handle_clear_entry(&mut self) {
         match &mut self.state {
             CalculatorState::EnteringOperand1 { register } => {
@@ -574,6 +566,14 @@ impl CalculatorFsm {
             }
             _ => {}
         }
+    }
+}
+
+fn format_val(v: f64) -> String {
+    if let Ok(reg) = Register::from_f64(v) {
+        reg.display_string().to_string()
+    } else {
+        format!("{v}")
     }
 }
 
@@ -661,12 +661,3 @@ mod tests {
         assert!(fsm.history().is_empty());
     }
 }
-
-fn format_val(v: f64) -> String {
-    if let Ok(reg) = Register::from_f64(v) {
-        reg.display_string().to_string()
-    } else {
-        format!("{v}")
-    }
-}
-

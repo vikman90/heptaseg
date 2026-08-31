@@ -20,6 +20,8 @@ export component AppWindow inherits Window {
     in-out property <bool> show-tape: false;
     in property <[TapeItem]> tape-entries: [];
     in-out property <int> theme-index: 0;
+    in-out property <bool> sound-enabled: true;
+
 
     // Theme color resolver functions (0: Classic Olive, 1: Quartz Silver, 2: VFD Cyan, 3: Sinclair Ruby LED)
     pure function lcd_bg() -> color {
@@ -66,7 +68,9 @@ export component AppWindow inherits Window {
 
     callback key-action(string);
     callback clear-tape();
+    callback toggle-sound();
     callback toggle-tape();
+
 
 
     forward-focus: focus-scope;
@@ -167,7 +171,31 @@ export component AppWindow inherits Window {
                                 }
                             }
 
+                            // Sound Mute/Unmute Toggle Button
+                            Rectangle {
+                                width: 28px;
+                                height: 26px;
+                                background: ta-sound.pressed ? #4f46e5 : ta-sound.has-hover ? #475569 : #334155;
+                                border-radius: 4px;
+                                border-width: 1px;
+                                border-color: #475569;
+
+                                Text {
+                                    text: root.sound-enabled ? "🔊" : "🔇";
+                                    font-size: 12px;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                ta-sound := TouchArea {
+                                    clicked => {
+                                        root.toggle-sound();
+                                    }
+                                }
+                            }
+
                             // Paper Tape Toggle Button
+
                             Rectangle {
                                 width: 28px;
                                 height: 26px;

@@ -126,9 +126,13 @@ fn parse_key_action(action: &str) -> Option<Key> {
     }
 }
 
+mod audio;
+use audio::SoundEngine;
+
 fn main() -> Result<(), slint::PlatformError> {
     let window = AppWindow::new()?;
     let fsm = Rc::new(RefCell::new(CalculatorFsm::new()));
+    let sound = Rc::new(SoundEngine::new());
 
     // Initial UI state synchronization
     sync_ui(&window, &fsm.borrow());
@@ -136,8 +140,10 @@ fn main() -> Result<(), slint::PlatformError> {
     // Connect keypad and physical keyboard actions
     let window_weak = window.as_weak();
     let fsm_clone = fsm.clone();
+    let sound_click = sound.clone();
 
     window.on_key_action(move |action| {
+        sound_click.play_click();
         if let Some(key) = parse_key_action(action.as_str()) {
             fsm_clone.borrow_mut().process_key(key);
             if let Some(win) = window_weak.upgrade() {
@@ -155,6 +161,15 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    let window_sound = window.as_weak();
+    let sound_toggle = sound;
+    window.on_toggle_sound(move || {
+        let muted = sound_toggle.toggle_mute();
+        if let Some(win) = window_sound.upgrade() {
+            win.set_sound_enabled(!muted);
+        }
+    });
+
     let window_tape = window.as_weak();
     window.on_toggle_tape(move || {
         if let Some(win) = window_tape.upgrade() {
@@ -168,8 +183,8 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     window.run()
-}
 
+}
 
 #[cfg(test)]
 mod tests {

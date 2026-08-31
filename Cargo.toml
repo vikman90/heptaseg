@@ -13,6 +13,8 @@ categories = ["gui"]
 
 [dependencies]
 slint = "1.17"
+rodio = { version = "0.20", default-features = false, features = ["symphonia-all"] }
+
 
 [dev-dependencies]
 proptest = "1.6"
