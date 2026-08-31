@@ -32,7 +32,7 @@ export component LcdDigit inherits Rectangle {
         ch == "2" || ch == "3" || ch == "4" || ch == "5" || ch == "6" || ch == "8" || ch == "9" || ch == "-" || ch == "E" || ch == "r" || ch == "o"
     }
 
-    // Segment A (Top: (4.5, 3.0) to (19.5, 3.0), Thickness 3.2, Gap 0.5)
+    // Segment A (Top: y from 2 to 6, x from 3 to 21)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -41,10 +41,10 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_a(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 5.0 3.0 L 19.0 3.0 L 15.8 6.2 L 8.2 6.2 Z";
+        commands: "M 3 2 L 21 2 L 17 6 L 7 6 Z";
     }
 
-    // Segment B (Top-Right: x from 16.3 to 19.5, y from 3.5 to 19.5)
+    // Segment B (Top-Right: x from 17 to 21, y from 3 to 19)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -53,10 +53,10 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_b(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 19.5 3.5 L 19.5 19.5 L 16.3 17.9 L 16.3 6.7 Z";
+        commands: "M 21 3 L 21 19 L 17 17 L 17 7 Z";
     }
 
-    // Segment C (Bottom-Right: x from 16.3 to 19.5, y from 20.5 to 36.5)
+    // Segment C (Bottom-Right: x from 17 to 21, y from 21 to 37)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -65,10 +65,10 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_c(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 19.5 20.5 L 19.5 36.5 L 16.3 33.3 L 16.3 22.1 Z";
+        commands: "M 21 21 L 21 37 L 17 33 L 17 23 Z";
     }
 
-    // Segment D (Bottom: (4.5, 37.0) to (19.5, 37.0), Thickness 3.2, Gap 0.5)
+    // Segment D (Bottom: y from 34 to 38, x from 3 to 21)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -77,10 +77,10 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_d(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 5.0 37.0 L 19.0 37.0 L 15.8 33.8 L 8.2 33.8 Z";
+        commands: "M 3 38 L 21 38 L 17 34 L 7 34 Z";
     }
 
-    // Segment E (Bottom-Left: x from 4.5 to 7.7, y from 20.5 to 36.5)
+    // Segment E (Bottom-Left: x from 3 to 7, y from 21 to 37)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -89,10 +89,10 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_e(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 4.5 20.5 L 7.7 22.1 L 7.7 33.3 L 4.5 36.5 Z";
+        commands: "M 3 21 L 7 23 L 7 33 L 3 37 Z";
     }
 
-    // Segment F (Top-Left: x from 4.5 to 7.7, y from 3.5 to 19.5)
+    // Segment F (Top-Left: x from 3 to 7, y from 3 to 19)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -101,10 +101,10 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_f(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 4.5 3.5 L 7.7 6.7 L 7.7 17.9 L 4.5 19.5 Z";
+        commands: "M 3 3 L 7 7 L 7 17 L 3 19 Z";
     }
 
-    // Segment G (Middle: Hexagon centered at y=20.0)
+    // Segment G (Middle: Hexagon centered at y=20)
     Path {
         viewbox-x: 0;
         viewbox-y: 0;
@@ -113,16 +113,26 @@ export component LcdDigit inherits Rectangle {
         width: 100%;
         height: 100%;
         fill: seg_g(root.digit-char) ? root.active-color : root.ghost-color;
-        commands: "M 5.0 20.0 L 6.6 18.4 L 17.4 18.4 L 19.0 20.0 L 17.4 21.6 L 6.6 21.6 Z";
+        commands: "M 4 20 L 7 18 L 17 18 L 20 20 L 17 22 L 7 22 Z";
     }
 
     // Decimal Point (DP)
     Rectangle {
-        x: 20.2px;
-        y: 34.0px;
-        width: 3.2px;
-        height: 3.2px;
-        border-radius: 0.5px;
+        x: 21.5px;
+        y: 35.0px;
+        width: 3.0px;
+        height: 3.0px;
+        border-radius: 0px;
         background: root.has-decimal ? root.active-color : root.ghost-color;
     }
+
+
+
+
+
+
+
+
+
+
 }

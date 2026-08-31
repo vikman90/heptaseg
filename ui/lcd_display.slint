@@ -9,16 +9,14 @@ export component LcdDisplay inherits Rectangle {
     in property <bool> is-rpn: false;
     in property <string> active-op: "";
 
-    in property <color> lcd-bg: #859870;
-    in property <color> active-ink: #050a04;
-    in property <color> ghost-ink: #748760;
-    in property <color> panel-border: #3a4430;
-
-
+    in property <color> lcd-bg: #899975;
+    in property <color> active-ink: #141c11;
+    in property <color> ghost-ink: #788866;
+    in property <color> panel-border: #82926e;
 
     width: 290px;
     height: 95px;
-    background: #181c19;
+    background: #1e221b;
     border-radius: 6px;
     border-width: 2px;
     border-color: #121511;
@@ -32,9 +30,7 @@ export component LcdDisplay inherits Rectangle {
         background: root.lcd-bg;
         border-radius: 3px;
         border-width: 1px;
-        border-color: root.panel-border;
-
-
+        border-color: #6d7b5c;
 
         // Subtle LCD inner shadow / bevel
         Rectangle {
@@ -51,7 +47,7 @@ export component LcdDisplay inherits Rectangle {
             y: 6px;
             width: parent.width - 20px;
             height: 14px;
-            spacing: 10px;
+            spacing: 12px;
 
             // Memory flag [M]
             Text {
@@ -84,7 +80,6 @@ export component LcdDisplay inherits Rectangle {
                 font-weight: 800;
                 color: root.is-rpn ? root.active-ink : root.ghost-ink;
             }
-
 
             // Flexible spacer
             Rectangle {
@@ -123,26 +118,30 @@ export component LcdDisplay inherits Rectangle {
 
         // 8 Digit Cells row
         HorizontalLayout {
-            x: 8px;
+            x: 5px;
             y: 28px;
-            width: parent.width - 16px;
-            height: 48px;
-            alignment: space-between;
+            width: 268px;
+            height: 46px;
+            spacing: 4px;
 
             for d[i] in root.digits: Rectangle {
                 width: 30px;
                 height: 46px;
+                border-width: 0.5px;
+                border-color: root.panel-border;
 
                 LcdDigit {
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
+                    x: 3px;
+                    y: 3px;
                     digit-char: d;
                     has-decimal: root.decimals[i];
                     active-color: root.active-ink;
                     ghost-color: root.ghost-ink;
                 }
             }
-
         }
+
+
+
     }
 }

@@ -24,16 +24,16 @@ fn apply_theme(window: &AppWindow, theme: DisplayTheme) {
 fn take_theme_snapshot(theme: DisplayTheme, out_png: &str) {
     let window = AppWindow::new().unwrap();
     let digits = vec![
-        SharedString::from("0"),
         SharedString::from("1"),
         SharedString::from("2"),
         SharedString::from("3"),
         SharedString::from("4"),
         SharedString::from("5"),
+        SharedString::from("6"),
+        SharedString::from("7"),
         SharedString::from("8"),
-        SharedString::from("0"),
     ];
-    let decimals = vec![false, false, false, true, false, false, false, false];
+    let decimals = vec![false, false, false, false, false, false, false, false];
 
     window.set_digits(ModelRc::from(Rc::new(VecModel::from(digits))));
     window.set_decimals(ModelRc::from(Rc::new(VecModel::from(decimals))));
@@ -60,7 +60,6 @@ fn take_theme_snapshot(theme: DisplayTheme, out_png: &str) {
         header.push(pixel.b);
     }
     std::fs::write(&ppm_path, header).unwrap();
-    println!("Saved PPM: {}", ppm_path);
 }
 
 fn main() {
