@@ -1,9 +1,11 @@
-//! Heptaseg CLI: Terminal pocket calculator powered by the same decoupled FSM.
+//! Heptaseg CLI: Terminal pocket calculator with Standard & RPN modes.
 
+use std::env;
 use std::io::{self, BufRead, Write};
 
 use heptaseg::core::fsm::CalculatorFsm;
 use heptaseg::core::register::MAX_LCD_DIGITS;
+use heptaseg::core::rpn::RpnCalculator;
 use heptaseg::core::types::{BinaryOp, Key, MemoryOp, UnaryOp};
 
 /// Renders a single digit into 3 vertical slices for ASCII 7-segment display.
@@ -82,14 +84,20 @@ fn format_display_slots(raw: &str) -> ([char; MAX_LCD_DIGITS], [bool; MAX_LCD_DI
 }
 
 /// Renders the full retro ASCII LCD panel to stdout.
-fn print_terminal_lcd(fsm: &CalculatorFsm) {
-    let flags = fsm.status_flags();
-    let (digits, decimals) = format_display_slots(&fsm.display_string());
+fn print_terminal_lcd(
+    mode_name: &str,
+    display_str: &str,
+    mem_active: bool,
+    neg: bool,
+    err: bool,
+    op: Option<BinaryOp>,
+) {
+    let (digits, decimals) = format_display_slots(display_str);
 
-    let mem_flag = if flags.memory_active { "[M]" } else { "   " };
-    let neg_flag = if flags.negative { "[-]" } else { "   " };
-    let err_flag = if flags.has_error { "[ERR]" } else { "     " };
-    let op_flag = match flags.active_operator {
+    let mem_flag = if mem_active { "[M]" } else { "   " };
+    let neg_flag = if neg { "[-]" } else { "   " };
+    let err_flag = if err { "[ERR]" } else { "     " };
+    let op_flag = match op {
         Some(BinaryOp::Add) => "[+]",
         Some(BinaryOp::Subtract) => "[-]",
         Some(BinaryOp::Multiply) => "[*]",
@@ -99,7 +107,10 @@ fn print_terminal_lcd(fsm: &CalculatorFsm) {
 
     println!("\x1B[2J\x1B[1;1H"); // Clear screen
     println!("╔══════════════════════════════════════════════════╗");
-    println!("║  HEPTASEG TERMINAL CALCULATOR                    ║");
+    println!(
+        "║  HEPTASEG TERMINAL CALCULATOR ({:>8})         ║",
+        mode_name
+    );
     println!("╠══════════════════════════════════════════════════╣");
     println!(
         "║  {} {} {} {:>28}  ║",
@@ -121,7 +132,9 @@ fn print_terminal_lcd(fsm: &CalculatorFsm) {
         println!(" ║");
     }
     println!("╚══════════════════════════════════════════════════╝");
-    println!(" Commands: [0-9] [.] [+ - * /] [=] [ac] [ce] [m+ m- mr mc] [sqrt] [%] [q]");
+    println!(
+        " Commands: [0-9] [.] [+ - * /] [=] [ac] [ce] [m+ m- mr mc] [sqrt] [%] [tape] [mode] [q]"
+    );
     print!(" > ");
     io::stdout().flush().unwrap();
 }
@@ -143,7 +156,6 @@ fn parse_cli_token(token: &str) -> Vec<Key> {
         "%" => vec![Key::UnaryOp(UnaryOp::Percentage)],
         "+/-" | "neg" => vec![Key::UnaryOp(UnaryOp::Negate)],
         other => {
-            // Parse sequence of characters (e.g. "123.45")
             let mut keys = Vec::new();
             for ch in other.chars() {
                 if let Some(digit) = ch.to_digit(10) {
@@ -168,11 +180,38 @@ fn parse_cli_token(token: &str) -> Vec<Key> {
 }
 
 fn main() {
-    let mut fsm = CalculatorFsm::new();
+    let mut use_rpn = env::args().any(|arg| arg == "--rpn");
+    let mut standard_fsm = CalculatorFsm::new();
+    let mut rpn_calc = RpnCalculator::new();
+
     let stdin = io::stdin();
     let mut reader = stdin.lock();
 
-    print_terminal_lcd(&fsm);
+    let draw_screen = |is_rpn: bool, std: &CalculatorFsm, rpn: &RpnCalculator| {
+        if is_rpn {
+            let flags = rpn.status_flags();
+            print_terminal_lcd(
+                "RPN MODE",
+                &rpn.display_string(),
+                flags.memory_active,
+                flags.negative,
+                flags.has_error,
+                flags.active_operator,
+            );
+        } else {
+            let flags = std.status_flags();
+            print_terminal_lcd(
+                "STANDARD",
+                &std.display_string(),
+                flags.memory_active,
+                flags.negative,
+                flags.has_error,
+                flags.active_operator,
+            );
+        }
+    };
+
+    draw_screen(use_rpn, &standard_fsm, &rpn_calc);
 
     let mut line = String::new();
     while reader.read_line(&mut line).unwrap() > 0 {
@@ -182,14 +221,50 @@ fn main() {
             break;
         }
 
+        if trimmed == "mode" || trimmed == "rpn" || trimmed == "std" {
+            use_rpn = !use_rpn;
+            draw_screen(use_rpn, &standard_fsm, &rpn_calc);
+            line.clear();
+            continue;
+        }
+
+        if trimmed == "tape" || trimmed == "history" {
+            println!("\n--- 📜 PAPER TAPE AUDIT TRAIL ---");
+            let entries = if use_rpn {
+                rpn_calc.history()
+            } else {
+                standard_fsm.history()
+            };
+            if entries.is_empty() {
+                println!("(Tape is empty)");
+            } else {
+                for entry in entries {
+                    println!(
+                        "#{:02} {:<24} = {:>10}",
+                        entry.id, entry.expression, entry.result
+                    );
+                }
+            }
+            println!("--------------------------------\nPress Enter to continue...");
+            let mut dummy = String::new();
+            let _ = reader.read_line(&mut dummy);
+            draw_screen(use_rpn, &standard_fsm, &rpn_calc);
+            line.clear();
+            continue;
+        }
+
         for token in trimmed.split_whitespace() {
             let keys = parse_cli_token(token);
             for key in keys {
-                fsm.process_key(key);
+                if use_rpn {
+                    rpn_calc.process_key(key);
+                } else {
+                    standard_fsm.process_key(key);
+                }
             }
         }
 
-        print_terminal_lcd(&fsm);
+        draw_screen(use_rpn, &standard_fsm, &rpn_calc);
         line.clear();
     }
 }

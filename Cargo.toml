@@ -1,7 +1,8 @@
 [package]
 name = "heptaseg"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+
 authors = ["Heptaseg Contributors"]
 description = "A vintage 7-segment LCD pocket calculator built with Rust and Slint"
 license = "MIT"
@@ -12,7 +13,10 @@ keywords = ["calculator", "slint", "retro", "lcd", "fsm"]
 categories = ["gui"]
 
 [dependencies]
-slint = "1.17"
+slint = { version = "1.17", default-features = false, features = ["backend-winit", "renderer-software", "compat-1-2"] }
+rodio = { version = "0.20", default-features = false, features = ["symphonia-all"] }
+
+
 
 [dev-dependencies]
 proptest = "1.6"

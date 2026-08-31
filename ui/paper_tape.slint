@@ -1,0 +1,158 @@
+// Retro Paper Tape Roll & Transaction Audit Drawer
+
+import { ScrollView, Button } from "std-widgets.slint";
+
+export struct TapeItem {
+    id: int,
+    expression: string,
+    result: string,
+}
+
+export component PaperTape inherits Rectangle {
+    in property <[TapeItem]> entries: [];
+    callback clear-tape();
+    callback close-tape();
+
+    background: #fdfbf7;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #d6cfbe;
+    clip: true;
+
+    VerticalLayout {
+        padding: 10px;
+        spacing: 8px;
+
+        // Paper roll header
+        HorizontalLayout {
+            alignment: space-between;
+
+            Text {
+                text: "📜 PAPER TAPE";
+                font-size: 11px;
+                font-weight: 700;
+                font-family: "DejaVu Sans Mono, monospace";
+                color: #57534e;
+                vertical-alignment: center;
+            }
+
+            HorizontalLayout {
+                spacing: 4px;
+
+                Rectangle {
+                    width: 44px;
+                    height: 20px;
+                    background: ta-clear.pressed ? #b91c1c : ta-clear.has-hover ? #dc2626 : #ef4444;
+                    border-radius: 3px;
+
+                    Text {
+                        text: "CLR";
+                        color: #ffffff;
+                        font-size: 9px;
+                        font-weight: 700;
+                        font-family: "DejaVu Sans Mono, monospace";
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    ta-clear := TouchArea {
+                        clicked => {
+                            root.clear-tape();
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 22px;
+                    height: 20px;
+                    background: ta-close.pressed ? #78716c : ta-close.has-hover ? #a8a29e : #d6d3d1;
+                    border-radius: 3px;
+
+                    Text {
+                        text: "✕";
+                        color: #292524;
+                        font-size: 10px;
+                        font-weight: 700;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    ta-close := TouchArea {
+                        clicked => {
+                            root.close-tape();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Perforation strip separator
+        Rectangle {
+            height: 1px;
+            background: #e7e5e4;
+        }
+
+        // Empty state or transaction feed
+        if root.entries.length == 0: Rectangle {
+            vertical-stretch: 1;
+            Text {
+                text: "--- NO TRANSACTIONS ---\nPerform calculations to\nprint onto paper tape.";
+                font-size: 10px;
+                font-family: "DejaVu Sans Mono, monospace";
+                color: #a8a29e;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        if root.entries.length > 0: ScrollView {
+            vertical-stretch: 1;
+
+            VerticalLayout {
+                spacing: 8px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+
+                for item in root.entries: Rectangle {
+                    background: #f5f2e9;
+                    border-radius: 3px;
+                    border-width: 1px;
+                    border-color: #e5dfd3;
+
+                    VerticalLayout {
+                        padding: 6px;
+                        spacing: 2px;
+
+                        HorizontalLayout {
+                            alignment: space-between;
+                            Text {
+                                text: "#" + item.id;
+                                font-size: 9px;
+                                color: #a8a29e;
+                                font-family: "DejaVu Sans Mono, monospace";
+                            }
+                            Text {
+                                text: item.expression;
+                                font-size: 11px;
+                                color: #44403c;
+                                font-family: "DejaVu Sans Mono, monospace";
+                                font-weight: 500;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            alignment: end;
+                            Text {
+                                text: "= " + item.result;
+                                font-size: 13px;
+                                font-weight: 800;
+                                color: #1c1917;
+                                font-family: "DejaVu Sans Mono, monospace";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -5,12 +5,16 @@ use std::rc::Rc;
 
 use heptaseg::core::fsm::CalculatorFsm;
 use heptaseg::core::register::MAX_LCD_DIGITS;
+use heptaseg::core::rpn::RpnCalculator;
 use heptaseg::core::types::{BinaryOp, Key, MemoryOp, UnaryOp};
 use slint::{ModelRc, SharedString, VecModel};
 
 slint::include_modules!();
 
-/// Parses the raw display string from the FSM into 8 aligned LCD digit cells and decimal flags.
+mod audio;
+use audio::SoundEngine;
+
+/// Parses the raw display string from the calculator into 8 aligned LCD digit cells and decimal flags.
 fn parse_lcd_cells(raw: &str) -> ([SharedString; MAX_LCD_DIGITS], [bool; MAX_LCD_DIGITS]) {
     let mut digits: Vec<char> = Vec::new();
     let mut decimals: Vec<bool> = Vec::new();
@@ -56,9 +60,14 @@ fn parse_lcd_cells(raw: &str) -> ([SharedString; MAX_LCD_DIGITS], [bool; MAX_LCD
     (out_digits, out_decimals)
 }
 
-/// Updates the Slint UI properties to match the current FSM state.
-fn sync_ui(window: &AppWindow, fsm: &CalculatorFsm) {
-    let raw_display = fsm.display_string();
+/// Updates the Slint UI properties to match the current calculator state (Standard or RPN).
+fn sync_app_state(window: &AppWindow, is_rpn: bool, fsm: &CalculatorFsm, rpn: &RpnCalculator) {
+    let (raw_display, flags, history) = if is_rpn {
+        (rpn.display_string(), rpn.status_flags(), rpn.history())
+    } else {
+        (fsm.display_string(), fsm.status_flags(), fsm.history())
+    };
+
     let (digits, decimals) = parse_lcd_cells(&raw_display);
 
     let digits_model = Rc::new(VecModel::from(digits.to_vec()));
@@ -67,10 +76,10 @@ fn sync_ui(window: &AppWindow, fsm: &CalculatorFsm) {
     window.set_digits(ModelRc::from(digits_model));
     window.set_decimals(ModelRc::from(decimals_model));
 
-    let flags = fsm.status_flags();
     window.set_has_error(flags.has_error);
     window.set_memory_active(flags.memory_active);
     window.set_is_negative(flags.negative);
+    window.set_is_rpn_mode(is_rpn);
 
     let op_str = match flags.active_operator {
         Some(BinaryOp::Add) => "+",
@@ -80,6 +89,17 @@ fn sync_ui(window: &AppWindow, fsm: &CalculatorFsm) {
         None => "",
     };
     window.set_active_op(SharedString::from(op_str));
+
+    // Synchronize paper tape history entries
+    let tape_entries: Vec<TapeItem> = history
+        .iter()
+        .map(|entry| TapeItem {
+            id: entry.id as i32,
+            expression: SharedString::from(&entry.expression),
+            result: SharedString::from(&entry.result),
+        })
+        .collect();
+    window.set_tape_entries(ModelRc::from(Rc::new(VecModel::from(tape_entries))));
 }
 
 /// Translates a UI key action string to a typed `Key` enum.
@@ -115,22 +135,91 @@ fn parse_key_action(action: &str) -> Option<Key> {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
+    // Default to pixel-perfect software renderer unless explicitly overridden
+    if std::env::var_os("SLINT_BACKEND").is_none() {
+        std::env::set_var("SLINT_BACKEND", "software");
+    }
+
     let window = AppWindow::new()?;
     let fsm = Rc::new(RefCell::new(CalculatorFsm::new()));
 
+    let rpn = Rc::new(RefCell::new(RpnCalculator::new()));
+    let is_rpn = Rc::new(RefCell::new(false));
+    let sound = Rc::new(SoundEngine::new());
+
     // Initial UI state synchronization
-    sync_ui(&window, &fsm.borrow());
+    sync_app_state(&window, *is_rpn.borrow(), &fsm.borrow(), &rpn.borrow());
 
     // Connect keypad and physical keyboard actions
     let window_weak = window.as_weak();
     let fsm_clone = fsm.clone();
+    let rpn_clone = rpn.clone();
+    let is_rpn_clone = is_rpn.clone();
+    let sound_click = sound.clone();
 
     window.on_key_action(move |action| {
+        sound_click.play_click();
         if let Some(key) = parse_key_action(action.as_str()) {
-            fsm_clone.borrow_mut().process_key(key);
-            if let Some(win) = window_weak.upgrade() {
-                sync_ui(&win, &fsm_clone.borrow());
+            let rpn_mode = *is_rpn_clone.borrow();
+            if rpn_mode {
+                rpn_clone.borrow_mut().process_key(key);
+            } else {
+                fsm_clone.borrow_mut().process_key(key);
             }
+
+            if let Some(win) = window_weak.upgrade() {
+                sync_app_state(&win, rpn_mode, &fsm_clone.borrow(), &rpn_clone.borrow());
+            }
+        }
+    });
+
+    let window_mode = window.as_weak();
+    let fsm_mode = fsm.clone();
+    let rpn_mode_cell = rpn.clone();
+    let is_rpn_mode = is_rpn.clone();
+    window.on_toggle_mode(move || {
+        let mut mode = is_rpn_mode.borrow_mut();
+        *mode = !*mode;
+        let new_mode = *mode;
+        if let Some(win) = window_mode.upgrade() {
+            sync_app_state(&win, new_mode, &fsm_mode.borrow(), &rpn_mode_cell.borrow());
+        }
+    });
+
+    let window_clear = window.as_weak();
+    let fsm_clear = fsm.clone();
+    let rpn_clear = rpn.clone();
+    let is_rpn_clear = is_rpn;
+    window.on_clear_tape(move || {
+        let rpn_mode = *is_rpn_clear.borrow();
+        if rpn_mode {
+            rpn_clear.borrow_mut().clear_history();
+        } else {
+            fsm_clear.borrow_mut().clear_history();
+        }
+        if let Some(win) = window_clear.upgrade() {
+            sync_app_state(&win, rpn_mode, &fsm_clear.borrow(), &rpn_clear.borrow());
+        }
+    });
+
+    let window_sound = window.as_weak();
+    let sound_toggle = sound;
+    window.on_toggle_sound(move || {
+        let muted = sound_toggle.toggle_mute();
+        if let Some(win) = window_sound.upgrade() {
+            win.set_sound_enabled(!muted);
+        }
+    });
+
+    let window_tape = window.as_weak();
+    window.on_toggle_tape(move || {
+        if let Some(win) = window_tape.upgrade() {
+            let new_state = !win.get_show_tape();
+            win.set_show_tape(new_state);
+            let target_w = if new_state { 570.0 } else { 330.0 };
+            win.window()
+                .set_size(slint::LogicalSize::new(target_w, 490.0));
+            win.window().request_redraw();
         }
     });
 

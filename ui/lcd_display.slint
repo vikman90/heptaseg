@@ -8,17 +8,20 @@ export component LcdDisplay inherits Rectangle {
     in property <bool> has-error: false;
     in property <string> active-op: "";
 
-    property <color> lcd-bg: #899975;
-    property <color> active-ink: #141c11;
-    property <color> ghost-ink: #788866;
-    property <color> cell-divider: #82926e;
+    in property <color> lcd-bg: #899975;
+    in property <color> active-ink: #141c11;
+    in property <color> ghost-ink: #788866;
+    in property <color> cell-divider: #82926e;
+    in property <color> bezel-bg: #1e221b;
+    in property <color> bezel-border: #121511;
 
     width: 290px;
     height: 95px;
-    background: #1e221b;
+    background: root.bezel-bg;
     border-radius: 6px;
     border-width: 2px;
-    border-color: #121511;
+    border-color: root.bezel-border;
+
 
     // Inner LCD glass panel
     Rectangle {
