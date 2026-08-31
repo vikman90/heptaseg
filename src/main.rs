@@ -1,9 +1,13 @@
 //! Heptaseg: Vintage 7-Segment LCD Pocket Calculator.
 
+mod audio;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use audio::SoundManager;
 use heptaseg::core::fsm::CalculatorFsm;
+
 use heptaseg::core::register::MAX_LCD_DIGITS;
 use heptaseg::core::types::{BinaryOp, DisplayTheme, Key, MemoryOp, UnaryOp};
 use slint::{ModelRc, SharedString, VecModel};
@@ -146,16 +150,20 @@ fn main() -> Result<(), slint::PlatformError> {
     let window = AppWindow::new()?;
     let fsm = Rc::new(RefCell::new(CalculatorFsm::new()));
     let current_theme = Rc::new(RefCell::new(DisplayTheme::default()));
+    let sound_mgr = Rc::new(SoundManager::new());
 
     // Initial UI state synchronization & theme setup
     sync_ui(&window, &fsm.borrow());
     apply_theme(&window, *current_theme.borrow());
+    window.set_is_muted(sound_mgr.is_muted());
 
     // Connect keypad and physical keyboard actions
     let window_weak = window.as_weak();
     let fsm_clone = fsm.clone();
+    let sound_mgr_click = sound_mgr.clone();
 
     window.on_key_action(move |action| {
+        sound_mgr_click.play_click();
         if let Some(key) = parse_key_action(action.as_str()) {
             fsm_clone.borrow_mut().process_key(key);
             if let Some(win) = window_weak.upgrade() {
@@ -180,6 +188,15 @@ fn main() -> Result<(), slint::PlatformError> {
         *current_theme_clone.borrow_mut() = next_theme;
         if let Some(win) = window_weak_theme.upgrade() {
             apply_theme(&win, next_theme);
+        }
+    });
+
+    let window_weak_sound = window.as_weak();
+    let sound_mgr_toggle = sound_mgr.clone();
+    window.on_toggle_sound(move || {
+        let is_muted = sound_mgr_toggle.toggle_mute();
+        if let Some(win) = window_weak_sound.upgrade() {
+            win.set_is_muted(is_muted);
         }
     });
 

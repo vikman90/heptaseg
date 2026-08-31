@@ -31,6 +31,10 @@ export component AppWindow inherits Window {
     in property <[string]> tape-lines: [];
     callback clear-tape();
 
+    // Sound Properties
+    in property <bool> is-muted: false;
+    callback toggle-sound();
+
     callback key-action(string);
 
     forward-focus: focus-scope;
@@ -56,10 +60,12 @@ export component AppWindow inherits Window {
             else if (event.text == "=" || event.text == "\n") { root.key-action("="); accept; }
             else if (event.text == "t" || event.text == "T") { root.is-tape-open = !root.is-tape-open; accept; }
             else if (event.text == "m" || event.text == "M") { root.cycle-theme(); accept; }
+            else if (event.text == "s" || event.text == "S") { root.toggle-sound(); accept; }
             else if (event.text == "c" || event.text == "C" || event.text == Key.Escape) { root.key-action("AC"); accept; }
             else if (event.text == Key.Backspace || event.text == Key.Delete) { root.key-action("CE"); accept; }
             else { reject; }
         }
+
 
         HorizontalLayout {
             padding: 8px;
@@ -149,14 +155,32 @@ export component AppWindow inherits Window {
                                 }
                             }
 
+                            // Sound toggle button
+                            TouchArea {
+                                width: 24px;
+                                height: 22px;
+                                clicked => { root.toggle-sound(); }
+                                Rectangle {
+                                    border-radius: 3px;
+                                    background: parent.pressed ? #323842 : #22262e;
+                                    border-width: 1px;
+                                    border-color: #3d4654;
+                                    Text {
+                                        text: root.is-muted ? "🔇" : "🔊";
+                                        font-size: 8px;
+                                    }
+                                }
+                            }
+
                             // Vintage Photovoltaic Solar Panel
                             Rectangle {
-                                width: 52px;
+                                width: 44px;
                                 height: 24px;
                                 background: #141722;
                                 border-radius: 3px;
                                 border-width: 1px;
                                 border-color: #363c4e;
+
 
                                 // Solar cell grid lines
                                 HorizontalLayout {

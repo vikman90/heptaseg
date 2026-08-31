@@ -12,7 +12,10 @@ keywords = ["calculator", "slint", "retro", "lcd", "fsm"]
 categories = ["gui"]
 
 [dependencies]
+rodio = { version = "0.19", default-features = false }
 slint = "1.17"
+
+
 
 [dev-dependencies]
 proptest = "1.6"
