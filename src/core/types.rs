@@ -86,3 +86,45 @@ impl fmt::Display for CalculatorError {
 }
 
 impl std::error::Error for CalculatorError {}
+
+/// Retro display palette themes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DisplayTheme {
+    #[default]
+    ClassicLcd,
+    QuartzLcd,
+    VfdCyan,
+    SinclairLed,
+}
+
+impl DisplayTheme {
+    /// Cycles to the next available display theme.
+    pub fn next(&self) -> Self {
+        match self {
+            DisplayTheme::ClassicLcd => DisplayTheme::QuartzLcd,
+            DisplayTheme::QuartzLcd => DisplayTheme::VfdCyan,
+            DisplayTheme::VfdCyan => DisplayTheme::SinclairLed,
+            DisplayTheme::SinclairLed => DisplayTheme::ClassicLcd,
+        }
+    }
+
+    /// User-facing label for the theme.
+    pub fn name(&self) -> &'static str {
+        match self {
+            DisplayTheme::ClassicLcd => "LCD OLIVE",
+            DisplayTheme::QuartzLcd => "LCD QUARTZ",
+            DisplayTheme::VfdCyan => "VFD CYAN",
+            DisplayTheme::SinclairLed => "RUBY LED",
+        }
+    }
+
+    /// Returns the (background, active_ink, ghost_ink, bezel_border) hex color strings.
+    pub fn colors(&self) -> (&'static str, &'static str, &'static str, &'static str) {
+        match self {
+            DisplayTheme::ClassicLcd => ("#899975", "#141c11", "#788866", "#3d4432"),
+            DisplayTheme::QuartzLcd => ("#9ea7a6", "#0c1012", "#87908f", "#444a4b"),
+            DisplayTheme::VfdCyan => ("#081014", "#00f5d4", "#003832", "#111f26"),
+            DisplayTheme::SinclairLed => ("#180406", "#ff1e2e", "#3d070b", "#33080c"),
+        }
+    }
+}

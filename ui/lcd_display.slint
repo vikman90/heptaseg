@@ -8,14 +8,14 @@ export component LcdDisplay inherits Rectangle {
     in property <bool> has-error: false;
     in property <string> active-op: "";
 
-    property <color> lcd-bg: #899975;
-    property <color> active-ink: #141c11;
-    property <color> ghost-ink: #788866;
-    property <color> cell-divider: #82926e;
+    in property <color> lcd-bg: #899975;
+    in property <color> active-ink: #141c11;
+    in property <color> ghost-ink: #788866;
+    in property <color> panel-border: #3d4432;
 
     width: 290px;
     height: 95px;
-    background: #1e221b;
+    background: #181c19;
     border-radius: 6px;
     border-width: 2px;
     border-color: #121511;
@@ -29,7 +29,9 @@ export component LcdDisplay inherits Rectangle {
         background: root.lcd-bg;
         border-radius: 3px;
         border-width: 1px;
-        border-color: #6d7b5c;
+        border-color: root.panel-border;
+
+
 
         // Subtle LCD inner shadow / bevel
         Rectangle {
@@ -119,7 +121,10 @@ export component LcdDisplay inherits Rectangle {
                 width: 30px;
                 height: 46px;
                 border-width: 0.5px;
-                border-color: root.cell-divider;
+                border-color: root.panel-border;
+                opacity: 0.3;
+
+
 
                 LcdDigit {
                     x: (parent.width - self.width) / 2;

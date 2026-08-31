@@ -5,10 +5,29 @@ use std::rc::Rc;
 
 use heptaseg::core::fsm::CalculatorFsm;
 use heptaseg::core::register::MAX_LCD_DIGITS;
-use heptaseg::core::types::{BinaryOp, Key, MemoryOp, UnaryOp};
+use heptaseg::core::types::{BinaryOp, DisplayTheme, Key, MemoryOp, UnaryOp};
 use slint::{ModelRc, SharedString, VecModel};
 
 slint::include_modules!();
+
+/// Converts a hex color string (e.g. "#899975") to a Slint Color.
+fn hex_to_color(hex: &str) -> slint::Color {
+    let hex = hex.trim_start_matches('#');
+    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+    slint::Color::from_argb_u8(255, r, g, b)
+}
+
+/// Applies the active palette theme to the Slint LCD screen.
+fn apply_theme(window: &AppWindow, theme: DisplayTheme) {
+    let (bg, active, ghost, border) = theme.colors();
+    window.set_lcd_bg(hex_to_color(bg));
+    window.set_active_ink(hex_to_color(active));
+    window.set_ghost_ink(hex_to_color(ghost));
+    window.set_border_color(hex_to_color(border));
+    window.set_theme_name(SharedString::from(theme.name()));
+}
 
 /// Parses the raw display string from the FSM into 8 aligned LCD digit cells and decimal flags.
 fn parse_lcd_cells(raw: &str) -> ([SharedString; MAX_LCD_DIGITS], [bool; MAX_LCD_DIGITS]) {
@@ -126,9 +145,11 @@ fn parse_key_action(action: &str) -> Option<Key> {
 fn main() -> Result<(), slint::PlatformError> {
     let window = AppWindow::new()?;
     let fsm = Rc::new(RefCell::new(CalculatorFsm::new()));
+    let current_theme = Rc::new(RefCell::new(DisplayTheme::default()));
 
-    // Initial UI state synchronization
+    // Initial UI state synchronization & theme setup
     sync_ui(&window, &fsm.borrow());
+    apply_theme(&window, *current_theme.borrow());
 
     // Connect keypad and physical keyboard actions
     let window_weak = window.as_weak();
@@ -149,6 +170,16 @@ fn main() -> Result<(), slint::PlatformError> {
         fsm_clone_clear.borrow_mut().clear_history();
         if let Some(win) = window_weak_clear.upgrade() {
             sync_ui(&win, &fsm_clone_clear.borrow());
+        }
+    });
+
+    let window_weak_theme = window.as_weak();
+    let current_theme_clone = current_theme.clone();
+    window.on_cycle_theme(move || {
+        let next_theme = current_theme_clone.borrow().next();
+        *current_theme_clone.borrow_mut() = next_theme;
+        if let Some(win) = window_weak_theme.upgrade() {
+            apply_theme(&win, next_theme);
         }
     });
 
