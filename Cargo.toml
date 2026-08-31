@@ -6,7 +6,9 @@ authors = ["Heptaseg Contributors"]
 description = "A vintage 7-segment LCD pocket calculator built with Rust and Slint"
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/vikman90/heptaseg"
 keywords = ["calculator", "slint", "retro", "lcd", "fsm"]
+
 categories = ["gui"]
 
 [dependencies]
