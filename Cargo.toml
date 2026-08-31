@@ -1,7 +1,8 @@
 [package]
 name = "heptaseg"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+
 authors = ["Heptaseg Contributors"]
 description = "A vintage 7-segment LCD pocket calculator built with Rust and Slint"
 license = "MIT"

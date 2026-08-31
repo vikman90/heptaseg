@@ -10,27 +10,36 @@ Heptaseg strictly separates the **visual representation layer** from the **domai
 
 1. **Zero UI Dependencies in Core Logic**: The entire `src/core/` module is completely independent of Slint or any GUI library. It can be compiled in headless environments, embedded devices (`no_std` with minor adaptations), or tested in unit tests with zero graphical overhead.
 2. **Unidirectional Data Flow**:
-   - The user interacts with the UI (mouse clicks or physical keyboard strokes).
+   - The user interacts with the UI (mouse clicks, touch, or physical keyboard strokes).
    - The UI/Controller encodes the input into a strongly-typed `Key` event.
    - The `CalculatorFsm` processes the event and produces a deterministic state transition.
-   - The UI reads the updated state properties (`display_string`, `status_flags`) and repaints the screen.
+   - The UI reads the updated state properties (`display_string`, `status_flags`, `history`) and repaints the screen.
 
 ```mermaid
-graph LR
+flowchart TD
     subgraph UI ["Slint UI Layer"]
-        KB[Physical Keyboard] --> Controller
+        KB[Physical Keyboard] --> Controller[Application Controller]
         KP[Keypad Touch/Click] --> Controller
-        LCD[7-Segment LCD View]
+        LCD[7-Segment LCD Multi-Theme View]
+        Tape[Paper Tape History Drawer]
     end
 
-    subgraph Core ["Rust Core Domain"]
+    subgraph AudioEngine ["Audio Layer"]
+        Sound[In-Memory PCM Click Synthesizer]
+    end
+
+    subgraph Core ["Rust Core Domain (zero GUI dependencies)"]
         Controller -->|Key Event| FSM[Finite State Machine]
-        FSM -->|Arithmetic & Memory| Engine[Arithmetic Engine]
+        Controller -->|Trigger Sound| Sound
+        FSM -->|Standard / RPN| Engine[Arithmetic Engine]
+        FSM -->|Stack Manipulation| RPN[4-Level RPN Stack]
+        FSM -->|Append Operation| History[Paper Tape History Log]
         FSM -->|Formatting & Digits| Reg[LCD Register]
         FSM -->|State & Status Flags| Controller
     end
 
-    Controller -->|Sync Properties| LCD
+    Controller -->|Sync Display & Flags| LCD
+    Controller -->|Sync Tape Entries| Tape
 ```
 
 ---
@@ -38,7 +47,7 @@ graph LR
 ## 2. Design Patterns
 
 ### 2.1 State Pattern (Functional FSM)
-The calculator state is modeled as an algebraic data type (`enum CalculatorState`), making invalid states unrepresentable in the type system:
+The standard calculator state is modeled as an algebraic data type (`enum CalculatorState`), making invalid states unrepresentable in the type system:
 
 ```rust
 pub enum CalculatorState {
@@ -51,27 +60,35 @@ pub enum CalculatorState {
 }
 ```
 
-### 2.2 Command / Event Pattern
-All interactions enter the system through a unified `Key` enum:
-- `Key::Digit(u8)`: Input digits `0` through `9`.
-- `Key::DecimalPoint`: Input `.`.
-- `Key::BinaryOp(BinaryOp)`: Operations `+`, `−`, `×`, `÷`.
-- `Key::UnaryOp(UnaryOp)`: Immediate operations `√`, `%`, `±`.
-- `Key::MemoryOp(MemoryOp)`: Memory operations `M+`, `M−`, `MR`, `MC`.
-- `Key::Equals`: Execution `=`.
-- `Key::Clear`: All Clear (`AC`).
-- `Key::ClearEntry`: Clear Entry (`CE`).
+### 2.2 Dual Calculation Engine: Standard vs. RPN
+The calculator can operate in two distinct modes:
+1. **Standard Pocket Mode**: Immediate sequential execution (`2 + 3 × 4 = 20`) with repeat calculation on consecutive `=` presses.
+2. **HP-Style 4-Register RPN Stack**: Classical 4-level operational stack ($X, Y, Z, T$) with stack drop, roll-down, and binary operators consuming $Y$ and $X$.
 
-### 2.3 Domain Error Handling
-Instead of returning opaque unit types `()`, errors are formally typed as `CalculatorError`:
-- `DivisionByZero`: Division by `0`.
-- `NegativeSquareRoot`: Square root of a negative operand.
-- `Overflow`: Results exceeding the 8-digit LCD capacity ($\ge 10^8$ or $\le -10^8$).
-- `InvalidInput`: Malformed numeric strings.
+```rust
+pub struct RpnStack {
+    pub x: f64, // Bottom of stack (display register)
+    pub y: f64, // Second operand
+    pub z: f64, // Third operand
+    pub t: f64, // Top of stack
+}
+```
+
+### 2.3 Paper Tape Ring Buffer History Log
+Calculations and intermediate expressions are logged to a ring buffer (`HistoryLog`):
+- Records timestamp, operands, operator, and final result.
+- Provides receipt paper formatting (`format_paper_tape()`).
+- Automatically updates in both GUI and CLI frontends.
+
+### 2.4 In-Memory Tactile Audio Synthesis
+Key presses trigger a procedural in-memory mechanical click synthesizer (`src/audio.rs`):
+- Zero external audio assets or static `.wav` files required.
+- Generates 9ms damped PCM impulse waveforms ($1100\text{Hz} \to 280\text{Hz}$ bottom-out drop + exponential decay).
+- Non-blocking playback via `rodio` with mute toggle.
 
 ---
 
-## 3. Finite State Machine Transitions
+## 3. Finite State Machine Transitions (Standard Mode)
 
 | Current State | Event / Key | Next State | Action / Effect |
 | :--- | :--- | :--- | :--- |
@@ -100,24 +117,11 @@ Instead of returning opaque unit types `()`, errors are formally typed as `Calcu
 
 ---
 
-## 4. LCD Vector Rendering Strategy
+## 4. Retro Display Palette Specifications
 
-Instead of bundling or relying on external font files which may render inconsistently across platforms (Linux FreeType vs. Windows DirectWrite vs. macOS CoreText), **Heptaseg renders each 7-segment digit cell using declarative vector polygons**:
-
-```
-         ─ A ─
-       │       │
-       F       B
-       │       │
-         ─ G ─
-       │       │
-       E       C
-       │       │
-         ─ D ─    (• DP)
-```
-
-Each segment $S \in \{A, B, C, D, E, F, G, DP\}$ is evaluated dynamically:
-- **Active state**: Rendered in dark liquid-crystal charcoal (`#141c11`).
-- **Inactive/Ghost state**: Rendered in faint greenish-grey (`#788866`) against the vintage LCD background (`#899975`).
-
-This achieves the true visual effect of real physical LCD segments illuminated by ambient light.
+| Theme | Display Technology | Background | Active Segment | Inactive (Ghost) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Classic LCD** | Vintage Olive Liquid Crystal | `#899975` | `#141c11` (Charcoal) | `#788866` (Ghost Olive) |
+| **Quartz LCD** | Silver-Grey Quartz Glass | `#9ea7a6` | `#0c1012` (Black) | `#87908f` (Ghost Grey) |
+| **VFD Cyan** | Vacuum Fluorescent Tube | `#081014` | `#00f5d4` (Radiant Cyan) | `#003832` (Dark Teal) |
+| **Ruby LED** | 1976 Sinclair Sovereign LED | `#180406` | `#ff1e2e` (Bright Red) | `#3d070b` (Ruby Ghost) |
