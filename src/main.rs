@@ -80,6 +80,15 @@ fn sync_ui(window: &AppWindow, fsm: &CalculatorFsm) {
         None => "",
     };
     window.set_active_op(SharedString::from(op_str));
+
+    // Synchronize paper tape history lines
+    let tape_entries: Vec<SharedString> = fsm
+        .history()
+        .entries()
+        .iter()
+        .map(|entry| SharedString::from(format!("[#{:03}] {}", entry.id, entry.expression)))
+        .collect();
+    window.set_tape_lines(ModelRc::from(Rc::new(VecModel::from(tape_entries))));
 }
 
 /// Translates a UI key action string to a typed `Key` enum.
@@ -131,6 +140,15 @@ fn main() -> Result<(), slint::PlatformError> {
             if let Some(win) = window_weak.upgrade() {
                 sync_ui(&win, &fsm_clone.borrow());
             }
+        }
+    });
+
+    let window_weak_clear = window.as_weak();
+    let fsm_clone_clear = fsm.clone();
+    window.on_clear_tape(move || {
+        fsm_clone_clear.borrow_mut().clear_history();
+        if let Some(win) = window_weak_clear.upgrade() {
+            sync_ui(&win, &fsm_clone_clear.borrow());
         }
     });
 

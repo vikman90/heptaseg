@@ -1,0 +1,109 @@
+// Vintage Paper Tape receipt history component in Slint.
+
+export component PaperTape inherits Rectangle {
+    in property <[string]> tape-lines: [];
+    in property <bool> is-open: false;
+    callback close-tape();
+    callback clear-tape();
+
+    width: root.is-open ? 260px : 0px;
+    height: 100%;
+    clip: true;
+    background: transparent;
+    animate width { duration: 220ms; easing: ease-out; }
+
+    Rectangle {
+        width: 250px;
+        height: 100%;
+        background: #fcfaf2; // Vintage continuous roll receipt paper
+        border-radius: 4px;
+        drop-shadow-color: #00000088;
+        drop-shadow-blur: 12px;
+        drop-shadow-offset-x: -4px;
+        border-width: 1px;
+        border-color: #dcd4c0;
+
+        VerticalLayout {
+            padding: 12px;
+            spacing: 8px;
+
+            // Tape Header
+            HorizontalLayout {
+                Text {
+                    text: "🖨️ PAPER TAPE";
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: #5a5042;
+                    letter-spacing: 1px;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                TouchArea {
+                    width: 20px;
+                    height: 20px;
+                    clicked => { root.close-tape(); }
+                    Rectangle {
+                        border-radius: 3px;
+                        background: parent.pressed ? #d8cfbe : #e8e0d0;
+                        Text {
+                            text: "✕";
+                            font-size: 11px;
+                            color: #4a4032;
+                        }
+                    }
+                }
+            }
+
+            // Paper separator rule
+            Rectangle {
+                height: 1px;
+                background: #d0c4ad;
+            }
+
+            // Continuous Receipt Log
+            Flickable {
+                vertical-stretch: 1;
+                viewport-height: root.tape-lines.length * 20px + 20px;
+
+                VerticalLayout {
+                    spacing: 4px;
+                    padding-top: 4px;
+                    for line[idx] in root.tape-lines : Text {
+                        text: line;
+                        font-family: "monospace";
+                        font-size: 11px;
+                        color: #1e2832; // Vintage typewriter/matrix carbon ribbon ink
+                    }
+                }
+            }
+
+            // Paper separator rule
+            Rectangle {
+                height: 1px;
+                background: #d0c4ad;
+            }
+
+            // Tape Footer Actions
+            HorizontalLayout {
+                spacing: 8px;
+                TouchArea {
+                    horizontal-stretch: 1;
+                    height: 26px;
+                    clicked => { root.clear-tape(); }
+                    Rectangle {
+                        border-radius: 4px;
+                        background: parent.pressed ? #d0c4ad : #e2d8c4;
+                        border-width: 1px;
+                        border-color: #b8ac96;
+                        Text {
+                            text: "CLEAR TAPE";
+                            font-size: 9px;
+                            font-weight: 700;
+                            color: #443c30;
+                            letter-spacing: 0.5px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
