@@ -135,8 +135,14 @@ fn parse_key_action(action: &str) -> Option<Key> {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
+    // Default to pixel-perfect software renderer unless explicitly overridden
+    if std::env::var_os("SLINT_BACKEND").is_none() {
+        std::env::set_var("SLINT_BACKEND", "software");
+    }
+
     let window = AppWindow::new()?;
     let fsm = Rc::new(RefCell::new(CalculatorFsm::new()));
+
     let rpn = Rc::new(RefCell::new(RpnCalculator::new()));
     let is_rpn = Rc::new(RefCell::new(false));
     let sound = Rc::new(SoundEngine::new());
@@ -218,7 +224,6 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     window.run()
-
 }
 
 #[cfg(test)]

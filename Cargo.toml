@@ -13,8 +13,9 @@ keywords = ["calculator", "slint", "retro", "lcd", "fsm"]
 categories = ["gui"]
 
 [dependencies]
-slint = "1.17"
+slint = { version = "1.17", default-features = false, features = ["backend-winit", "renderer-software", "compat-1-2"] }
 rodio = { version = "0.20", default-features = false, features = ["symphonia-all"] }
+
 
 
 [dev-dependencies]
