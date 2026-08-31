@@ -131,10 +131,10 @@ impl DisplayTheme {
     /// Returns the (background, active_ink, ghost_ink, bezel_border) hex color strings.
     pub fn colors(&self) -> (&'static str, &'static str, &'static str, &'static str) {
         match self {
-            DisplayTheme::ClassicLcd => ("#899975", "#141c11", "#788866", "#3d4432"),
-            DisplayTheme::QuartzLcd => ("#9ea7a6", "#0c1012", "#87908f", "#444a4b"),
-            DisplayTheme::VfdCyan => ("#081014", "#00f5d4", "#003832", "#111f26"),
-            DisplayTheme::SinclairLed => ("#180406", "#ff1e2e", "#3d070b", "#33080c"),
+            DisplayTheme::ClassicLcd => ("#a3b88c", "#0a1208", "#94a97e", "#4e593f"),
+            DisplayTheme::QuartzLcd => ("#c8d4d2", "#040708", "#b6c2c0", "#556060"),
+            DisplayTheme::VfdCyan => ("#050c10", "#00ffd5", "#002c28", "#0e1a20"),
+            DisplayTheme::SinclairLed => ("#140204", "#ff1e2e", "#330508", "#2e060a"),
         }
     }
 }
