@@ -1,0 +1,6 @@
+//! Heptaseg: Vintage 7-Segment LCD Pocket Calculator library.
+
+pub mod core;
+
+pub use core::fsm::CalculatorFsm;
+pub use core::types::{BinaryOp, Key, MemoryOp, StatusFlags, UnaryOp};
