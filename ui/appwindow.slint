@@ -21,6 +21,8 @@ export component AppWindow inherits Window {
     in property <[TapeItem]> tape-entries: [];
     in-out property <int> theme-index: 0;
     in-out property <bool> sound-enabled: true;
+    in-out property <bool> is-rpn-mode: false;
+
 
 
     // Theme color resolver functions (0: Classic Olive, 1: Quartz Silver, 2: VFD Cyan, 3: Sinclair Ruby LED)
@@ -69,7 +71,9 @@ export component AppWindow inherits Window {
     callback key-action(string);
     callback clear-tape();
     callback toggle-sound();
+    callback toggle-mode();
     callback toggle-tape();
+
 
 
 
@@ -130,36 +134,63 @@ export component AppWindow inherits Window {
                             spacing: 1px;
                             Text {
                                 text: "HEPTASEG";
-                                font-size: 15px;
+                                font-size: 14px;
                                 font-weight: 900;
-                                letter-spacing: 2px;
+                                letter-spacing: 1.5px;
                                 color: #d1d8e0;
                             }
                             Text {
                                 text: "ELECTRONIC CALCULATOR";
-                                font-size: 8px;
+                                font-size: 7.5px;
                                 font-weight: 600;
-                                letter-spacing: 1px;
+                                letter-spacing: 0.8px;
                                 color: #7b8896;
                             }
                         }
 
                         HorizontalLayout {
-                            spacing: 5px;
+                            spacing: 4px;
                             alignment: center;
+
+                            // Mode Selector (STD / RPN)
+                            Rectangle {
+                                width: 28px;
+                                height: 22px;
+                                background: root.is-rpn-mode ? #059669 : (ta-mode.has-hover ? #475569 : #334155);
+                                border-radius: 3px;
+                                border-width: 1px;
+                                border-color: root.is-rpn-mode ? #10b981 : #475569;
+
+                                Text {
+                                    text: root.is-rpn-mode ? "RPN" : "STD";
+                                    font-size: 7.5px;
+                                    font-weight: 800;
+                                    color: root.is-rpn-mode ? #ffffff : #d1d8e0;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                ta-mode := TouchArea {
+                                    clicked => {
+                                        root.toggle-mode();
+                                    }
+                                }
+                            }
 
                             // Theme Selector Button
                             Rectangle {
                                 width: 28px;
-                                height: 26px;
+                                height: 22px;
                                 background: ta-theme.pressed ? #4f46e5 : ta-theme.has-hover ? #475569 : #334155;
-                                border-radius: 4px;
+                                border-radius: 3px;
                                 border-width: 1px;
                                 border-color: #475569;
 
                                 Text {
-                                    text: "🎨";
-                                    font-size: 12px;
+                                    text: "THM";
+                                    font-size: 7.5px;
+                                    font-weight: 800;
+                                    color: #d1d8e0;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
                                 }
@@ -174,15 +205,17 @@ export component AppWindow inherits Window {
                             // Sound Mute/Unmute Toggle Button
                             Rectangle {
                                 width: 28px;
-                                height: 26px;
+                                height: 22px;
                                 background: ta-sound.pressed ? #4f46e5 : ta-sound.has-hover ? #475569 : #334155;
-                                border-radius: 4px;
+                                border-radius: 3px;
                                 border-width: 1px;
                                 border-color: #475569;
 
                                 Text {
-                                    text: root.sound-enabled ? "🔊" : "🔇";
-                                    font-size: 12px;
+                                    text: root.sound-enabled ? "SND" : "MUTE";
+                                    font-size: 7px;
+                                    font-weight: 800;
+                                    color: root.sound-enabled ? #34d399 : #94a3b8;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
                                 }
@@ -195,18 +228,19 @@ export component AppWindow inherits Window {
                             }
 
                             // Paper Tape Toggle Button
-
                             Rectangle {
-                                width: 28px;
-                                height: 26px;
+                                width: 30px;
+                                height: 22px;
                                 background: root.show-tape ? #d97706 : (ta-tape.has-hover ? #475569 : #334155);
-                                border-radius: 4px;
+                                border-radius: 3px;
                                 border-width: 1px;
                                 border-color: root.show-tape ? #f59e0b : #475569;
 
                                 Text {
-                                    text: "📜";
-                                    font-size: 12px;
+                                    text: "TAPE";
+                                    font-size: 7.5px;
+                                    font-weight: 800;
+                                    color: root.show-tape ? #ffffff : #d1d8e0;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
                                 }
@@ -218,26 +252,18 @@ export component AppWindow inherits Window {
                                 }
                             }
 
+
                             // Vintage Photovoltaic Solar Panel
                             Rectangle {
-                                width: 68px;
-                                height: 28px;
+                                width: 46px;
+                                height: 24px;
                                 background: #141722;
                                 border-radius: 3px;
                                 border-width: 1px;
-                                border-color: #363c4e;
+                                border-color: #383e4a;
 
-                                // Solar cell grid lines
                                 HorizontalLayout {
                                     padding: 2px;
-                                    spacing: 0px;
-                                    for i in 4: Rectangle {
-                                        width: 15.5px;
-                                        height: 100%;
-                                        border-width: 0.5px;
-                                        border-color: #2b3244;
-                                        background: #181c2b;
-                                    }
                                 }
 
                                 // Glass gleam
