@@ -61,8 +61,18 @@ pub struct StatusFlags {
     pub memory_active: bool,
     /// True when the displayed value is negative.
     pub negative: bool,
+    /// True when the calculator is in RPN stack mode.
+    pub is_rpn: bool,
     /// Currently pending binary operator, if any.
     pub active_operator: Option<BinaryOp>,
+}
+
+/// Operational calculation mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CalculatorMode {
+    #[default]
+    Standard,
+    Rpn,
 }
 
 /// Domain errors produced during arithmetic execution or LCD register formatting.

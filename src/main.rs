@@ -94,6 +94,7 @@ fn sync_ui(window: &AppWindow, fsm: &CalculatorFsm) {
     window.set_has_error(flags.has_error);
     window.set_memory_active(flags.memory_active);
     window.set_is_negative(flags.negative);
+    window.set_is_rpn(flags.is_rpn);
 
     let op_str = match flags.active_operator {
         Some(BinaryOp::Add) => "+",
@@ -197,6 +198,15 @@ fn main() -> Result<(), slint::PlatformError> {
         let is_muted = sound_mgr_toggle.toggle_mute();
         if let Some(win) = window_weak_sound.upgrade() {
             win.set_is_muted(is_muted);
+        }
+    });
+
+    let window_weak_mode = window.as_weak();
+    let fsm_clone_mode = fsm.clone();
+    window.on_toggle_mode(move || {
+        fsm_clone_mode.borrow_mut().toggle_mode();
+        if let Some(win) = window_weak_mode.upgrade() {
+            sync_ui(&win, &fsm_clone_mode.borrow());
         }
     });
 

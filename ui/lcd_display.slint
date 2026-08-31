@@ -6,6 +6,7 @@ export component LcdDisplay inherits Rectangle {
     in property <bool> memory-active: false;
     in property <bool> is-negative: false;
     in property <bool> has-error: false;
+    in property <bool> is-rpn: false;
     in property <string> active-op: "";
 
     in property <color> lcd-bg: #899975;
@@ -42,13 +43,13 @@ export component LcdDisplay inherits Rectangle {
             opacity: 0.4;
         }
 
-        // Annunciator row (Flags: M, -, E, OP)
+        // Annunciator row (Flags: M, -, E, RPN, OP)
         HorizontalLayout {
             x: 10px;
             y: 6px;
             width: parent.width - 20px;
             height: 14px;
-            spacing: 12px;
+            spacing: 10px;
 
             // Memory flag [M]
             Text {
@@ -73,6 +74,15 @@ export component LcdDisplay inherits Rectangle {
                 font-weight: 700;
                 color: root.has-error ? root.active-ink : root.ghost-ink;
             }
+
+            // RPN Mode flag [RPN]
+            Text {
+                text: "RPN";
+                font-size: 9px;
+                font-weight: 800;
+                color: root.is-rpn ? root.active-ink : root.ghost-ink;
+            }
+
 
             // Flexible spacer
             Rectangle {

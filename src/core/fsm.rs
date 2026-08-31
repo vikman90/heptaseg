@@ -3,8 +3,9 @@
 use crate::core::engine::Engine;
 use crate::core::history::HistoryLog;
 use crate::core::register::Register;
+use crate::core::rpn::RpnStack;
 use crate::core::state::CalculatorState;
-use crate::core::types::{BinaryOp, Key, MemoryOp, StatusFlags, UnaryOp};
+use crate::core::types::{BinaryOp, CalculatorMode, Key, MemoryOp, StatusFlags, UnaryOp};
 
 /// Central calculator finite state machine.
 #[derive(Debug, Clone, PartialEq)]
@@ -12,6 +13,9 @@ pub struct CalculatorFsm {
     state: CalculatorState,
     engine: Engine,
     history: HistoryLog,
+    mode: CalculatorMode,
+    rpn_stack: RpnStack,
+    rpn_enter_pressed: bool,
     has_error: bool,
 }
 
@@ -28,8 +32,37 @@ impl CalculatorFsm {
             state: CalculatorState::Ready,
             engine: Engine::new(),
             history: HistoryLog::default(),
+            mode: CalculatorMode::Standard,
+            rpn_stack: RpnStack::new(),
+            rpn_enter_pressed: false,
             has_error: false,
         }
+    }
+
+    /// Returns the active calculator mode (Standard or Rpn).
+    pub fn mode(&self) -> CalculatorMode {
+        self.mode
+    }
+
+    /// Sets the operational mode.
+    pub fn set_mode(&mut self, mode: CalculatorMode) {
+        self.mode = mode;
+        self.reset();
+    }
+
+    /// Toggles between Standard and RPN modes.
+    pub fn toggle_mode(&mut self) -> CalculatorMode {
+        self.mode = match self.mode {
+            CalculatorMode::Standard => CalculatorMode::Rpn,
+            CalculatorMode::Rpn => CalculatorMode::Standard,
+        };
+        self.reset();
+        self.mode
+    }
+
+    /// Returns a reference to the RPN stack registers.
+    pub fn rpn_stack(&self) -> &RpnStack {
+        &self.rpn_stack
     }
 
     /// Returns a reference to the recorded calculation history.
@@ -49,6 +82,11 @@ impl CalculatorFsm {
             if matches!(key, Key::Clear) {
                 self.reset();
             }
+            return;
+        }
+
+        if self.mode == CalculatorMode::Rpn {
+            self.process_rpn_key(key);
             return;
         }
 
@@ -87,6 +125,152 @@ impl CalculatorFsm {
         }
     }
 
+    fn current_display_val(&self) -> f64 {
+        match &self.state {
+            CalculatorState::Ready => 0.0,
+            CalculatorState::EnteringOperand1 { register }
+            | CalculatorState::EnteringOperand2 { register, .. }
+            | CalculatorState::ResultDisplayed { register, .. } => register.to_f64(),
+            CalculatorState::OperatorPending { accumulator, .. } => *accumulator,
+            CalculatorState::Error => 0.0,
+        }
+    }
+
+    fn process_rpn_key(&mut self, key: Key) {
+        match key {
+            Key::Clear => {
+                self.reset();
+                self.rpn_stack.clear();
+                self.rpn_enter_pressed = false;
+            }
+            Key::ClearEntry => {
+                self.state = CalculatorState::Ready;
+                self.rpn_stack.x = 0.0;
+            }
+            Key::Digit(d) => {
+                if self.rpn_enter_pressed {
+                    let mut reg = Register::new();
+                    reg.append_digit(d);
+                    self.rpn_stack.x = reg.to_f64();
+                    self.state = CalculatorState::EnteringOperand1 { register: reg };
+                    self.rpn_enter_pressed = false;
+                } else {
+                    match &mut self.state {
+                        CalculatorState::EnteringOperand1 { register } => {
+                            register.append_digit(d);
+                            self.rpn_stack.x = register.to_f64();
+                        }
+                        _ => {
+                            let mut reg = Register::new();
+                            reg.append_digit(d);
+                            self.rpn_stack.x = reg.to_f64();
+                            self.state = CalculatorState::EnteringOperand1 { register: reg };
+                        }
+                    }
+                }
+            }
+            Key::DecimalPoint => {
+                if self.rpn_enter_pressed {
+                    let mut reg = Register::new();
+                    reg.append_decimal();
+                    self.rpn_stack.x = reg.to_f64();
+                    self.state = CalculatorState::EnteringOperand1 { register: reg };
+                    self.rpn_enter_pressed = false;
+                } else {
+                    match &mut self.state {
+                        CalculatorState::EnteringOperand1 { register } => {
+                            register.append_decimal();
+                            self.rpn_stack.x = register.to_f64();
+                        }
+                        _ => {
+                            let mut reg = Register::new();
+                            reg.append_decimal();
+                            self.rpn_stack.x = reg.to_f64();
+                            self.state = CalculatorState::EnteringOperand1 { register: reg };
+                        }
+                    }
+                }
+            }
+            Key::Equals => {
+                // Enter key in RPN: pushes X onto the stack
+                let current_val = self.current_display_val();
+                self.rpn_stack.x = current_val;
+                self.rpn_stack.push_enter();
+                self.rpn_enter_pressed = true;
+                if let Ok(reg) = Register::from_f64(current_val) {
+                    self.state = CalculatorState::ResultDisplayed {
+                        register: reg,
+                        last_operation: None,
+                    };
+                }
+            }
+            Key::BinaryOp(op) => {
+                let y = self.rpn_stack.y;
+                let x = self.current_display_val();
+                self.rpn_stack.x = x;
+                match self
+                    .rpn_stack
+                    .execute_binary(|y, x| self.engine.execute_binary(op, y, x))
+                {
+                    Ok(res) => {
+                        self.history.record_binary(y, op, x, res);
+                        match Register::from_f64(res) {
+                            Ok(reg) => {
+                                self.state = CalculatorState::ResultDisplayed {
+                                    register: reg,
+                                    last_operation: None,
+                                };
+                                self.rpn_enter_pressed = true;
+                            }
+                            Err(_) => self.enter_error(),
+                        }
+                    }
+                    Err(_) => self.enter_error(),
+                }
+            }
+            Key::UnaryOp(op) => {
+                let x = self.current_display_val();
+                self.rpn_stack.x = x;
+                if let UnaryOp::Negate = op {
+                    match &mut self.state {
+                        CalculatorState::EnteringOperand1 { register }
+                        | CalculatorState::ResultDisplayed { register, .. } => {
+                            register.toggle_sign();
+                            self.rpn_stack.x = register.to_f64();
+                        }
+                        _ => {
+                            let mut reg = Register::new();
+                            reg.toggle_sign();
+                            self.rpn_stack.x = reg.to_f64();
+                            self.state = CalculatorState::EnteringOperand1 { register: reg };
+                        }
+                    }
+                } else {
+                    match self.engine.execute_unary(op, x, None) {
+                        Ok(res) => {
+                            self.history.record_unary(x, op, res);
+                            self.rpn_stack.x = res;
+                            match Register::from_f64(res) {
+                                Ok(reg) => {
+                                    self.state = CalculatorState::ResultDisplayed {
+                                        register: reg,
+                                        last_operation: None,
+                                    };
+                                    self.rpn_enter_pressed = true;
+                                }
+                                Err(_) => self.enter_error(),
+                            }
+                        }
+                        Err(_) => self.enter_error(),
+                    }
+                }
+            }
+            Key::MemoryOp(op) => {
+                self.handle_memory_op(op);
+            }
+        }
+    }
+
     /// Returns the active string to show on the LCD digit cells.
     pub fn display_string(&self) -> String {
         match &self.state {
@@ -107,7 +291,7 @@ impl CalculatorFsm {
         }
     }
 
-    /// Returns the current status flags for LCD annunciators (M, -, ERR, active operator).
+    /// Returns the current status flags for LCD annunciators (M, -, ERR, RPN, active operator).
     pub fn status_flags(&self) -> StatusFlags {
         let (negative, active_op) = match &self.state {
             CalculatorState::Ready => (false, None),
@@ -127,6 +311,7 @@ impl CalculatorFsm {
             has_error: self.has_error,
             memory_active: self.engine.has_memory(),
             negative,
+            is_rpn: self.mode == CalculatorMode::Rpn,
             active_operator: active_op,
         }
     }
@@ -140,6 +325,7 @@ impl CalculatorFsm {
     pub fn reset(&mut self) {
         self.state = CalculatorState::Ready;
         self.has_error = false;
+        self.rpn_enter_pressed = false;
     }
 
     fn enter_error(&mut self) {

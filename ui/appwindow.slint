@@ -35,6 +35,11 @@ export component AppWindow inherits Window {
     in property <bool> is-muted: false;
     callback toggle-sound();
 
+    // RPN Mode Properties
+    in property <bool> is-rpn: false;
+    callback toggle-mode();
+
+
     callback key-action(string);
 
     forward-focus: focus-scope;
@@ -61,10 +66,12 @@ export component AppWindow inherits Window {
             else if (event.text == "t" || event.text == "T") { root.is-tape-open = !root.is-tape-open; accept; }
             else if (event.text == "m" || event.text == "M") { root.cycle-theme(); accept; }
             else if (event.text == "s" || event.text == "S") { root.toggle-sound(); accept; }
+            else if (event.text == "r" || event.text == "R") { root.toggle-mode(); accept; }
             else if (event.text == "c" || event.text == "C" || event.text == Key.Escape) { root.key-action("AC"); accept; }
             else if (event.text == Key.Backspace || event.text == Key.Delete) { root.key-action("CE"); accept; }
             else { reject; }
         }
+
 
 
         HorizontalLayout {
@@ -215,12 +222,14 @@ export component AppWindow inherits Window {
                         memory-active: root.memory-active;
                         is-negative: root.is-negative;
                         has-error: root.has-error;
+                        is-rpn: root.is-rpn;
                         active-op: root.active-op;
                         lcd-bg: root.lcd-bg;
                         active-ink: root.active-ink;
                         ghost-ink: root.ghost-ink;
                         panel-border: root.border-color;
                     }
+
 
 
                     // Spacer

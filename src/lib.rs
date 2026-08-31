@@ -4,6 +4,7 @@ pub mod core;
 
 pub use core::fsm::CalculatorFsm;
 pub use core::history::{HistoryEntry, HistoryLog};
+pub use core::rpn::RpnStack;
 pub use core::types::{
-    BinaryOp, CalculatorError, DisplayTheme, Key, MemoryOp, StatusFlags, UnaryOp,
+    BinaryOp, CalculatorError, CalculatorMode, DisplayTheme, Key, MemoryOp, StatusFlags, UnaryOp,
 };
