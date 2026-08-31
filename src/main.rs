@@ -148,7 +148,14 @@ fn parse_key_action(action: &str) -> Option<Key> {
 }
 
 fn main() -> Result<(), slint::PlatformError> {
+    // Default to software rendering backend if not explicitly specified by the environment,
+    // ensuring crisp, pixel-perfect 7-segment display rasterization on all platforms.
+    if std::env::var_os("SLINT_BACKEND").is_none() {
+        std::env::set_var("SLINT_BACKEND", "software");
+    }
+
     let window = AppWindow::new()?;
+
     let fsm = Rc::new(RefCell::new(CalculatorFsm::new()));
     let current_theme = Rc::new(RefCell::new(DisplayTheme::default()));
     let sound_mgr = Rc::new(SoundManager::new());
